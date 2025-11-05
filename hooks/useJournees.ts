@@ -137,6 +137,16 @@ export function useJournees() {
     return [...journees];
   }
 
+  const importJournees = async (journees: Journee[]): Promise<void> => {
+    try {
+      await storage.importJournees(journees)
+      await loadJournees() // Recharger la liste
+    } catch (error) {
+      console.error('Erreur import journees:', error)
+      throw error
+    }
+  }
+
   return {
     journees,
     isLoading,
@@ -145,6 +155,7 @@ export function useJournees() {
     deleteJournee,
     getJourneesFiltrees,
     getAllJournees,
+    importJournees,
     refetch: loadJournees,
   };
 }

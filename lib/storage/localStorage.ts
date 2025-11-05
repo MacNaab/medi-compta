@@ -3,9 +3,11 @@
 import { BaseStorage } from "./base";
 import { Lieu } from "@/types/lieu";
 import { Journee } from "@/types/journee";
+import { Virement } from "@/types/virement";
 
 const STORAGE_KEY = "medecin-lieux";
 const JOURNEES_STORAGE_KEY = "medecin-journees";
+const VIREMENTS_STORAGE_KEY = "medecin-virements";
 
 export class LocalStorageProvider extends BaseStorage {
   async getAll(): Promise<Lieu[]> {
@@ -146,5 +148,88 @@ export class LocalStorageProvider extends BaseStorage {
       const date = new Date(j.date);
       return date >= debut && date <= fin;
     });
+  }
+
+  // Méthodes pour les virements
+  async getAllVirements(): Promise<Virement[]> {
+    if (typeof window === "undefined") return [];
+
+    const data = localStorage.getItem(VIREMENTS_STORAGE_KEY);
+    if (!data) return [];
+
+    const virements = JSON.parse(data) as any[];
+    return virements.map((v) => ({
+      ...v,
+      dateDebut: new Date(v.dateDebut),
+      dateFin: new Date(v.dateFin),
+      dateReception: new Date(v.dateReception),
+      createdAt: new Date(v.createdAt),
+      updatedAt: new Date(v.updatedAt),
+    }));
+  }
+
+  async createVirement(virementData: Omit<Virement, "id">): Promise<Virement> {
+    const virements = await this.getAllVirements();
+    const nouveauVirement: Virement = {
+      ...virementData,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    virements.push(nouveauVirement);
+    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements));
+    return nouveauVirement;
+  }
+
+  async updateVirement(
+    id: string,
+    virementData: Partial<Virement>
+  ): Promise<Virement> {
+    const virements = await this.getAllVirements();
+    const index = virements.findIndex((v) => v.id === id);
+
+    if (index === -1) {
+      throw new Error("Virement non trouvé");
+    }
+
+    const virementModifie: Virement = {
+      ...virements[index],
+      ...virementData,
+      updatedAt: new Date(),
+    };
+
+    virements[index] = virementModifie;
+    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements));
+    return virementModifie;
+  }
+
+  async deleteVirement(id: string): Promise<void> {
+    const virements = await this.getAllVirements();
+    const virementsFiltres = virements.filter((v) => v.id !== id);
+    localStorage.setItem(
+      VIREMENTS_STORAGE_KEY,
+      JSON.stringify(virementsFiltres)
+    );
+  }
+
+  // NOUVELLES MÉTHODES D'IMPORT DIRECT
+  async importLieux(lieux: Lieu[]): Promise<void> {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lieux))
+  }
+
+  async importJournees(journees: Journee[]): Promise<void> {
+    localStorage.setItem(JOURNEES_STORAGE_KEY, JSON.stringify(journees))
+  }
+
+  async importVirements(virements: Virement[]): Promise<void> {
+    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements))
+  }
+
+  // Méthode pour vider complètement les données
+  async clearAll(): Promise<void> {
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(JOURNEES_STORAGE_KEY)
+    localStorage.removeItem(VIREMENTS_STORAGE_KEY)
   }
 }

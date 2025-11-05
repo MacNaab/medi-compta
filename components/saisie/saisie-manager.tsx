@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, BarChart3, List, Calendar, Calculator } from "lucide-react";
+import Link from "next/link";
 
 type ViewMode = "list" | "create" | "edit";
 type ActiveTab = "liste" | "statistiques";
@@ -176,7 +177,7 @@ export function SaisieManager() {
             className="text-yellow-800 p-0 h-auto mt-2"
             asChild
           >
-            <a href="/lieux">Créer un lieu de travail</a>
+            <Link href="/lieux">Créer un lieu de travail</Link>
           </Button>
         </div>
       )}
@@ -324,6 +325,7 @@ export function SaisieManager() {
               onCancel={handleCancel}
               isLoading={isLoading || lieuxLoading}
               datePredefinie={viewMode === "create" ? selectedDate : undefined}
+              journeeExistante={viewMode === 'edit' ? selectedJournee : undefined}
             />
           )}
         </DialogContent>

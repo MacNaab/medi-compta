@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { JourneeFormData } from "@/types/journee";
+import { JourneeAvecLieu, JourneeFormData } from "@/types/journee";
 import { Lieu } from "@/types/lieu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,8 @@ interface SaisieFormProps {
   onSubmit: (data: JourneeFormData) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
-  datePredefinie?: Date; // Nouvelle prop
+  datePredefinie?: Date;
+  journeeExistante?: JourneeAvecLieu | null;
 }
 
 export function SaisieForm({
@@ -48,6 +49,7 @@ export function SaisieForm({
   onCancel,
   isLoading = false,
   datePredefinie,
+  journeeExistante,
 }: SaisieFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLieu, setSelectedLieu] = useState<Lieu | null>(null);
@@ -59,6 +61,7 @@ export function SaisieForm({
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm<FormData>({
     resolver: zodResolver(saisieSchema),
     defaultValues: {
@@ -77,17 +80,17 @@ export function SaisieForm({
   // Format de la date pour l'input HTML
   const formatDateForInput = (date: Date): string => {
     // Utiliser toLocaleDateString pour éviter les problèmes de timezone
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const parseDateFromInput = (dateString: string): Date => {
-    const [year, month, day] = dateString.split('-').map(Number)
+    const [year, month, day] = dateString.split("-").map(Number);
     // Créer la date en timezone local
-    return new Date(year, month - 1, day)
-  }
+    return new Date(year, month - 1, day);
+  };
 
   // Fonction pour obtenir la valeur de la date
   const getDateValue = (): string => {
@@ -99,6 +102,33 @@ export function SaisieForm({
     const newDate = parseDateFromInput(e.target.value);
     setValue("date", newDate);
   };
+
+    useEffect(() => {
+    if (journeeExistante) {
+      // MODE ÉDITION : Pré-remplir avec les données existantes
+      const lieu = lieux.find((l) => l.id === journeeExistante.lieuId);
+      setSelectedLieu(lieu || null);
+      setRecettes(journeeExistante.recettesTotales.toString());
+
+      reset({
+        date: new Date(journeeExistante.date),
+        lieuId: journeeExistante.lieuId,
+        recettesTotales: journeeExistante.recettesTotales,
+        notes: journeeExistante.notes || "",
+      });
+    } else {
+      // MODE CRÉATION : Valeurs par défaut
+      setRecettes("");
+      setSelectedLieu(null);
+
+      reset({
+        date: datePredefinie || new Date(),
+        lieuId: "",
+        recettesTotales: 0,
+        notes: "",
+      });
+    }
+  }, [journeeExistante, lieux, datePredefinie, reset]);
 
   // Calcul automatique des honoraires théoriques
   const honorairesTheoriques =
@@ -148,7 +178,7 @@ export function SaisieForm({
               type="date"
               value={getDateValue()}
               onChange={handleDateChange}
-              className={errors.date ? 'border-red-500' : ''}
+              className={errors.date ? "border-red-500" : ""}
             />
             {errors.date && (
               <p className="text-red-500 text-sm">{errors.date.message}</p>

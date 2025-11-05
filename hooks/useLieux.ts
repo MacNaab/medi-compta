@@ -32,9 +32,9 @@ export function useLieux() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const nouveauLieuEnregistré  = await storage.create(nouveauLieu);
+    const nouveauLieuEnregistré = await storage.create(nouveauLieu);
     await loadLieux(); // Recharger la liste
-    return nouveauLieuEnregistré ;
+    return nouveauLieuEnregistré;
   };
 
   const updateLieu = async (id: string, data: Partial<Lieu>): Promise<Lieu> => {
@@ -48,12 +48,23 @@ export function useLieux() {
     await loadLieux();
   };
 
+  const importLieux = async (lieux: Lieu[]): Promise<void> => {
+    try {
+      await storage.importLieux(lieux);
+      await loadLieux(); // Recharger la liste
+    } catch (error) {
+      console.error("Erreur import lieux:", error);
+      throw error;
+    }
+  };
+
   return {
     lieux,
     isLoading,
     createLieu,
     updateLieu,
     deleteLieu,
+    importLieux,
     refetch: loadLieux,
   };
 }
