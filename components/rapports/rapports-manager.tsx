@@ -3,23 +3,25 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { FileText, TrendingUp, GitCompareArrows, Download } from "lucide-react";
+import { usePDF } from "react-to-pdf";
 import { useJournees } from "@/hooks/useJournees";
 import { useLieux } from "@/hooks/useLieux";
 import { useVirements } from "@/hooks/useVirements";
+import { RapportComparatifService } from "@/services/rapport-comparatif-service";
+import { RapportReelService } from "@/services/rapport-reel-service";
 import { RapportService } from "@/services/rapport-service";
-import { ExportService } from "@/services/export-service";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { RapportAnnuelView } from "./rapport-annuel";
+import { RapportComparatifAnnuelView } from "./rapport-comparatif-annuel";
+import { RapportComparatifTrimestrielView } from "./rapport-comparatif-trimestriel";
+import { RapportReelAnnuelView } from "./rapport-reel-annuel";
+import { RapportReelTrimestrielView } from "./rapport-reel-trimestriel";
 import { RapportSelector } from "./rapport-selector";
 import { RapportTrimestrielView } from "./rapport-trimestriel";
-import { RapportAnnuelView } from "./rapport-annuel";
-import { Card, CardContent } from "@/components/ui/card";
-import { RapportComparatifService } from "@/services/rapport-comparatif-service";
-import { RapportComparatifTrimestrielView } from "./rapport-comparatif-trimestriel";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, TrendingUp, GitCompareArrows } from "lucide-react";
-import { RapportComparatifAnnuelView } from "./rapport-comparatif-annuel";
-import { RapportReelService } from "@/services/rapport-reel-service";
-import { RapportReelTrimestrielView } from "./rapport-reel-trimestriel";
-import { RapportReelAnnuelView } from "./rapport-reel-annuel";
 
 type RapportView =
   | "selection"
@@ -31,6 +33,24 @@ type RapportView =
   | "reel-annuel";
 
 type RapportType = "theorique" | "reel" | "comparatif";
+
+function ExportToPdf({ children }: { children: React.ReactNode }) {
+  const { toPDF, targetRef } = usePDF({ filename: "rapport.pdf" });
+  return (
+    <div>
+      <div
+        style={{ marginTop: "-3.5rem" }}
+        className="pb-1 flex justify-center"
+      >
+        <Button onClick={() => toPDF()} variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          Télécharger en PDF
+        </Button>
+      </div>
+      <div ref={targetRef}>{children}</div>
+    </div>
+  );
+}
 
 export function RapportsManager() {
   const { journees, isLoading: journeesLoading } = useJournees();
@@ -81,6 +101,7 @@ export function RapportsManager() {
       } else {
         const rapport = RapportReelService.genererRapportReelAnnuel(
           virements,
+          journees,
           lieux,
           annee
         );
@@ -112,64 +133,6 @@ export function RapportsManager() {
     }
   };
 
-  const handleExport = (annee: number, trimestre?: number) => {
-    if (rapportType === "theorique") {
-      if (trimestre) {
-        const rapport = RapportService.genererRapportTrimestriel(
-          journees,
-          lieux,
-          annee,
-          trimestre as 1 | 2 | 3 | 4
-        );
-        ExportService.exporterRapportTheoriquePDF(rapport, "trimestriel");
-      } else {
-        const rapport = RapportService.genererRapportAnnuel(
-          journees,
-          lieux,
-          annee
-        );
-        ExportService.exporterRapportTheoriquePDF(rapport, "annuel");
-      }
-    } else if (rapportType === "reel") {
-      if (trimestre) {
-        const rapport = RapportReelService.genererRapportReelTrimestriel(
-          virements,
-          lieux,
-          annee,
-          trimestre as 1 | 2 | 3 | 4
-        );
-        ExportService.exporterRapportReelPDF(rapport, "trimestriel");
-      } else {
-        const rapport = RapportReelService.genererRapportReelAnnuel(
-          virements,
-          lieux,
-          annee
-        );
-        ExportService.exporterRapportReelPDF(rapport, "annuel");
-      }
-    } else if (rapportType === "comparatif") {
-      if (trimestre) {
-        const rapport =
-          RapportComparatifService.genererRapportComparatifTrimestriel(
-            journees,
-            virements,
-            lieux,
-            annee,
-            trimestre as 1 | 2 | 3 | 4
-          );
-        ExportService.exporterRapportComparatifPDF(rapport, "trimestriel");
-      } else {
-        const rapport = RapportComparatifService.genererRapportComparatifAnnuel(
-          journees,
-          virements,
-          lieux,
-          annee
-        );
-        ExportService.exporterRapportComparatifPDF(rapport, "annuel");
-      }
-    }
-  };
-
   const handleRetour = () => {
     setRapportView("selection");
     setRapportCourant(null);
@@ -196,12 +159,13 @@ export function RapportsManager() {
     <div className="container mx-auto p-6 max-w-6xl">
       {/* Bouton de retour pour les vues de rapport */}
       {rapportView !== "selection" && (
-        <button
+        <Button
           onClick={handleRetour}
+          variant="ghost"
           className="mb-6 text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2 transition-colors"
         >
           ← Retour aux rapports
-        </button>
+        </Button>
       )}
 
       {/* Vue sélection */}
@@ -262,7 +226,6 @@ export function RapportsManager() {
                     <RapportSelector
                       anneesDisponibles={anneesDisponibles}
                       onRapportSelect={handleRapportSelect}
-                      onExport={handleExport}
                       rapportType="theorique"
                     />
                   )}
@@ -286,7 +249,6 @@ export function RapportsManager() {
                     <RapportSelector
                       anneesDisponibles={anneesDisponibles}
                       onRapportSelect={handleRapportSelect}
-                      onExport={handleExport}
                       rapportType="reel"
                     />
                   )}
@@ -313,7 +275,6 @@ export function RapportsManager() {
                     <RapportSelector
                       anneesDisponibles={anneesDisponibles}
                       onRapportSelect={handleRapportSelect}
-                      onExport={handleExport}
                       rapportType="comparatif"
                     />
                   )}
@@ -326,32 +287,45 @@ export function RapportsManager() {
 
       {/* Vue rapport trimestriel */}
       {rapportView === "trimestriel" && rapportCourant && (
-        <RapportTrimestrielView rapport={rapportCourant} />
+        <ExportToPdf>
+          <RapportTrimestrielView rapport={rapportCourant} />
+        </ExportToPdf>
       )}
 
       {/* Vue rapport annuel */}
       {rapportView === "annuel" && rapportCourant && (
-        <RapportAnnuelView rapport={rapportCourant} />
+        <ExportToPdf>
+          {" "}
+          <RapportAnnuelView rapport={rapportCourant} />
+        </ExportToPdf>
       )}
 
       {/* Vue rapport reel trimestriel */}
       {rapportView === "reel-trimestriel" && rapportCourant && (
-        <RapportReelTrimestrielView rapport={rapportCourant} />
+        <ExportToPdf>
+          <RapportReelTrimestrielView rapport={rapportCourant} />
+        </ExportToPdf>
       )}
 
       {/* Vue rapport reel annuel */}
       {rapportView === "reel-annuel" && rapportCourant && (
-        <RapportReelAnnuelView rapport={rapportCourant} />
+        <ExportToPdf>
+          <RapportReelAnnuelView rapport={rapportCourant} />
+        </ExportToPdf>
       )}
 
       {/* Vue rapport comparatif */}
       {rapportView === "comparatif-trimestriel" && rapportCourant && (
-        <RapportComparatifTrimestrielView rapport={rapportCourant} />
+        <ExportToPdf>
+          <RapportComparatifTrimestrielView rapport={rapportCourant} />
+        </ExportToPdf>
       )}
 
       {/* Vue rapport comparatif annuel */}
       {rapportView === "comparatif-annuel" && rapportCourant && (
-        <RapportComparatifAnnuelView rapport={rapportCourant} />
+        <ExportToPdf>
+          <RapportComparatifAnnuelView rapport={rapportCourant} />
+        </ExportToPdf>
       )}
     </div>
   );

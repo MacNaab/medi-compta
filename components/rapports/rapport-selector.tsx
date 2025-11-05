@@ -15,19 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Download, Calendar, BarChart3 } from "lucide-react";
+import { FileText, Calendar, BarChart3 } from "lucide-react";
 
 interface RapportSelectorProps {
   anneesDisponibles: number[];
   onRapportSelect: (annee: number, trimestre?: number) => void;
-  onExport: (annee: number, trimestre?: number) => void;
   rapportType: "theorique" | "reel" | "comparatif"; // Nouvelle prop
 }
 
 export function RapportSelector({
   anneesDisponibles,
   onRapportSelect,
-  onExport,
   rapportType,
 }: RapportSelectorProps) {
   const [selectedAnnee, setSelectedAnnee] = useState<number>(
@@ -63,14 +61,6 @@ export function RapportSelector({
       onRapportSelect(selectedAnnee);
     } else {
       onRapportSelect(selectedAnnee, selectedTrimestre);
-    }
-  };
-
-  const handleExport = () => {
-    if (selectedType === "annuel") {
-      onExport(selectedAnnee);
-    } else {
-      onExport(selectedAnnee, selectedTrimestre);
     }
   };
 
@@ -173,15 +163,10 @@ export function RapportSelector({
         )}
 
         {/* Actions */}
-        <div className="flex flex-col md:flex-row gap-3 pt-2">
-          <Button onClick={handleGenererRapport} className="flex-1">
-            <FileText className="h-4 w-4 mr-2" />
+        <div className="flex justify-center">
+          <Button onClick={handleGenererRapport} className="flex-1 md:w-1/2">
+            <FileText className="h-4 w-4 mx-2" />
             Générer le rapport {getTypeLabel()}
-          </Button>
-
-          <Button onClick={handleExport} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter {getTypeLabel()}
           </Button>
         </div>
         {/* Information sur le type d'export */}

@@ -21,12 +21,31 @@ interface RapportReelAnnuelProps {
 }
 
 export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
-  const moyenneMensuelle = rapport.totalVirements / 12;
+  const totalAttenduAutomatique = rapport.virementsAutomatiques.reduce(
+    (sum, v) => sum + v.montantTheorique,
+    0
+  );
+
+  const totalVirementsReels = rapport.trimestres.reduce(
+    (sum, t) => sum + t.totalVirements,
+    0
+  );
+  const totalVirementsAttendus = rapport.virementsAutomatiques.reduce(
+    (sum, v) => sum + v.montantTheorique,
+    0
+  );
+  const totalTheoriqueGlobal = totalVirementsReels + totalVirementsAttendus;
+
+  // Taux basé sur ce qui a été reçu vs ce qui est attendu au total
   const tauxCompletion =
-    100 -
-    ((rapport.totalVirementsEnAttente + rapport.totalVirementsPartiels) /
-      rapport.trimestres.reduce((sum, t) => sum + t.nombreVirements, 0)) *
-      100;
+    totalTheoriqueGlobal > 0
+      ? (totalVirementsReels / totalTheoriqueGlobal) * 100
+      : 100;
+
+  const moyenneMensuelle = totalVirementsReels / 12;
+  const virementsEnRetard = rapport.virementsAutomatiques.filter(
+    (v) => v.statut === "manquant"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -47,14 +66,17 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
             <div className="flex flex-col items-end gap-2">
               <Badge
                 variant="secondary"
-                className="bg-green-100 text-green-800 text-lg px-4 py-2"
+                className={`" border text-lg px-4 py-2 " ${
+                  tauxCompletion >= 95
+                    ? "bg-green-50 border-green-200 text-green-800"
+                    : tauxCompletion >= 80
+                    ? "bg-amber-50 border-amber-200 text-amber-800"
+                    : "bg-red-50 border-red-200 text-red-800"
+                }`}
               >
-                {rapport.totalVirements.toFixed(2)} €
-              </Badge>
-              <div className="text-sm text-slate-600">
                 Taux de complétion :{" "}
-                <strong>{tauxCompletion.toFixed(1)}%</strong>
-              </div>
+                <strong>{tauxCompletion.toFixed(1)}%</strong>{" "}
+              </Badge>
             </div>
           </div>
         </CardContent>
@@ -107,7 +129,7 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600">
-              {rapport.totalVirementsEnAttente}
+              {rapport.virementsAutomatiques.length}
             </div>
             <div className="text-sm text-slate-600 mt-1">À recevoir</div>
           </CardContent>
@@ -302,18 +324,121 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
         </Card>
       )}
 
+      {/* NOUVELLE SECTION : Virements automatiques en attente */}
+      {rapport.virementsAutomatiques.length > 0 && (
+        <Card className="bg-amber-50 border-amber-200">
+          <CardHeader>
+            <CardTitle className="text-amber-800 flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Virements à recevoir (détection automatique)
+            </CardTitle>
+            <CardDescription className="text-amber-700">
+              {rapport.virementsAutomatiques.length} virement(s) détecté(s)
+              automatiquement basé sur vos honoraires théoriques
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-600">
+                  {rapport.virementsAutomatiques.length}
+                </div>
+                <div className="text-sm text-amber-700">Virements attendus</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-700">
+                  {totalAttenduAutomatique.toFixed(2)} €
+                </div>
+                <div className="text-sm text-amber-700">
+                  Montant total attendu
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {virementsEnRetard}
+                </div>
+                <div className="text-sm text-amber-700">
+                  Virements en retard
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {rapport.virementsAutomatiques.map((virement) => (
+                <div
+                  key={virement.id}
+                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: virement.lieu.couleur }}
+                    />
+                    <div>
+                      <div className="font-medium text-slate-800">
+                        {virement.lieu.nom}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        {virement.dateDebut.toLocaleDateString("fr-FR", {
+                          month: "long",
+                        })}{" "}
+                        -{virement.montantTheorique.toFixed(2)}€ attendus
+                      </div>
+                    </div>
+                  </div>
+
+                  <Badge
+                    className={
+                      virement.statut === "manquant"
+                        ? "bg-red-100 text-red-800"
+                        : virement.statut === "partiel"
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-blue-100 text-blue-800"
+                    }
+                  >
+                    {virement.statut === "manquant"
+                      ? "En retard"
+                      : virement.statut === "partiel"
+                      ? "Retard modéré"
+                      : "En attente"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 p-3 bg-amber-100 rounded-lg">
+              <div className="text-sm text-amber-800">
+                💡 <strong>Fonctionnalité automatique :</strong> Ces virements
+                sont détectés automatiquement à partir de vos honoraires
+                théoriques. Ils n&apos;ont pas besoin d&apos;être saisis
+                manuellement.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Bilan annuel */}
-      <Card className="bg-green-50 border-green-200">
+      <Card
+        className={
+          tauxCompletion >= 95
+            ? "bg-green-50 border-green-200"
+            : tauxCompletion >= 80
+            ? "bg-amber-50 border-amber-200"
+            : "bg-red-50 border-red-200"
+        }
+      >
         <CardContent className="p-6">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-green-800">
-              Bilan des Virements {rapport.annee}
+            <h3 className={`" text-lg font-semibold " ${tauxCompletion >= 95 ? "text-green-800" : tauxCompletion >= 80 ? "text-amber-800" : "text-red-800"} `}>
+              Bilan de l&apos;année {rapport.annee}
             </h3>
-            <p className="text-green-700 mt-2">
+            <p className={`" mt-4 " ${tauxCompletion >= 95 ? "text-green-700" : tauxCompletion >= 80 ? "text-amber-700" : "text-red-700"} `}>
               {tauxCompletion >= 95
                 ? "✅ Excellente année ! La quasi-totalité des virements ont été reçus sans problème."
                 : tauxCompletion >= 80
-                ? "⚠️ Bonne année globale, mais certaines situations nécessitent un suivi."
+                ? "⚠️ Bonne année globalement, mais certaines situations nécessitent un suivi."
                 : "❌ Année difficile : nombreux virements en attente ou partiels nécessitant une action."}
             </p>
             <div className="mt-3 text-sm text-slate-600">

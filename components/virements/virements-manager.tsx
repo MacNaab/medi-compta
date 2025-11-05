@@ -14,7 +14,6 @@ import { VirementAlerteService } from "@/services/virement-alerte-service";
 import { TableauBordVirements } from "./tableau-bord-virements";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Euro, AlertTriangle, List } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 type ViewMode = "list" | "create" | "edit" | "tableau-bord";
@@ -58,11 +57,6 @@ export function VirementsManager() {
 
     // On pourrait pré-remplir le formulaire ici avec les dates
     // Pour l'instant, on laisse l'utilisateur compléter
-  };
-
-  const handleCreate = () => {
-    setSelectedVirement(null);
-    setViewMode("create");
   };
 
   const handleEdit = (virement: VirementAvecLieu) => {

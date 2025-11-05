@@ -28,7 +28,7 @@ export default function HomePage() {
         </h1>
         <p className="text-xl text-slate-600 max-w-2xl mx-auto">
           Gérez facilement vos honoraires selon les lieux d&apos;exercice et
-          faciliter vos déclarations URSSAF
+          faciliter vos déclarations
         </p>
       </div>
 
@@ -103,7 +103,7 @@ export default function HomePage() {
             <DatabaseBackup className="h-8 w-8 text-amber-600 mb-2" />
             <CardTitle>Sauvegarder</CardTitle>
             <CardDescription>
-              Exportez et importez l&apos;ensemble de vos données au format JSON ou CSV
+              Exportez et importez l&apos;ensemble de vos données au format JSON ou XLSX
             </CardDescription>
           </CardHeader>
           <CardContent>

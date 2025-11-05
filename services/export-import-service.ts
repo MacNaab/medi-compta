@@ -4,6 +4,7 @@ import { DonneesExport } from "@/types/export";
 import { Lieu } from "@/types/lieu";
 import { Journee } from "@/types/journee";
 import { Virement } from "@/types/virement";
+import XLSX from "xlsx";
 
 export class ExportImportService {
   private static VERSION = "1.0.0";
@@ -145,106 +146,17 @@ export class ExportImportService {
     return erreurs;
   }
 
-  // Export vers Excel (CSV simplifié)
-  static exporterExcel(
-    lieux: Lieu[],
-    journees: Journee[],
-    virements: Virement[]
-  ): void {
-    // Feuille Lieux
-    const entetesLieux = [
-      "Nom",
-      "Rétrocession %",
-      "Couleur",
-      "Adresse",
-      "Téléphone",
-      "Email",
-    ];
-    const donneesLieux = lieux.map((l) => [
-      l.nom,
-      l.pourcentageRetrocession.toString(),
-      l.couleur,
-      l.adresse || "",
-      l.telephone || "",
-      l.email || "",
-    ]);
-
-    // Feuille Journées
-    const entetesJournees = [
-      "Date",
-      "Lieu",
-      "Recettes Totales (€)",
-      "Honoraires Théoriques (€)",
-      "Notes",
-    ];
-    const donneesJournees = journees.map((j) => {
-      const lieu = lieux.find((l) => l.id === j.lieuId);
-      return [
-        new Date(j.date).toLocaleDateString("fr-FR"),
-        lieu?.nom || "Lieu inconnu",
-        j.recettesTotales.toString(),
-        j.honorairesTheoriques.toString(),
-        j.notes || "",
-      ];
-    });
-
-    // Feuille Virements
-    const entetesVirements = [
-      "Lieu",
-      "Période Début",
-      "Période Fin",
-      "Montant Reçu (€)",
-      "Date Réception",
-      "Statut",
-      "Notes",
-    ];
-    const donneesVirements = virements.map((v) => {
-      const lieu = lieux.find((l) => l.id === v.lieuId);
-      return [
-        lieu?.nom || "Lieu inconnu",
-        new Date(v.dateDebut).toLocaleDateString("fr-FR"),
-        new Date(v.dateFin).toLocaleDateString("fr-FR"),
-        v.montantRecu.toString(),
-        new Date(v.dateReception).toLocaleDateString("fr-FR"),
-        v.statut,
-        v.notes || "",
-      ];
-    });
-
-    // Créer le contenu CSV
-    const contenu = this.creerCSVMultiFeuilles([
-      { nom: "Lieux", entetes: entetesLieux, donnees: donneesLieux },
-      { nom: "Journees", entetes: entetesJournees, donnees: donneesJournees },
-      {
-        nom: "Virements",
-        entetes: entetesVirements,
-        donnees: donneesVirements,
-      },
-    ]);
-
-    this.downloadCSV(
-      contenu,
-      `donnees-honoraires-${new Date().toISOString().split("T")[0]}.csv`
-    );
-  }
-
-  private static creerCSVMultiFeuilles(
-    feuilles: Array<{
-      nom: string;
-      entetes: string[];
-      donnees: string[][];
-    }>
-  ): string {
-    return feuilles
-      .map((feuille) => {
-        const lignes = [
-          `=== ${feuille.nom} ===`,
-          feuille.entetes.join(","),
-          ...feuille.donnees.map((ligne) => ligne.join(",")),
-        ];
-        return lignes.join("\n");
-      })
-      .join("\n\n");
+  // Export vers Excel 
+  static exporterExcel(lieux: Lieu[], journees: Journee[], virements: Virement[]): void {
+    // utilisation sheetjs
+    const workbook = XLSX.utils.book_new();
+    const sheetLieux = XLSX.utils.json_to_sheet(lieux);
+    const sheetJournees = XLSX.utils.json_to_sheet(journees);
+    const sheetVirements = XLSX.utils.json_to_sheet(virements);
+    XLSX.utils.book_append_sheet(workbook, sheetLieux, "Lieux");
+    XLSX.utils.book_append_sheet(workbook, sheetJournees, "Journees");
+    XLSX.utils.book_append_sheet(workbook, sheetVirements, "Virements");
+    XLSX.writeFile(workbook, `sauvegarde-honoraires-${new Date().toISOString().split("T")[0]}.xlsx`);
   }
 
   private static validerDonnees(donnees: any): donnees is DonneesExport {
@@ -259,11 +171,6 @@ export class ExportImportService {
 
   private static downloadJSON(contenu: string, filename: string): void {
     const blob = new Blob([contenu], { type: "application/json" });
-    this.downloadBlob(blob, filename);
-  }
-
-  private static downloadCSV(contenu: string, filename: string): void {
-    const blob = new Blob([contenu], { type: "text/csv;charset=utf-8;" });
     this.downloadBlob(blob, filename);
   }
 
