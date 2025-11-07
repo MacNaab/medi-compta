@@ -4,10 +4,14 @@ import { BaseStorage } from "./base";
 import { Lieu } from "@/types/lieu";
 import { Journee } from "@/types/journee";
 import { Virement } from "@/types/virement";
+import { Consultation } from "@/types/consultation";
+import { Acte } from "@/types/acte";
 
 const STORAGE_KEY = "medecin-lieux";
 const JOURNEES_STORAGE_KEY = "medecin-journees";
 const VIREMENTS_STORAGE_KEY = "medecin-virements";
+const CONSULTATIONS_STORAGE_KEY = "medecin-consultations";
+const ACTES_STORAGE_KEY = "medecin-actes";
 
 export class LocalStorageProvider extends BaseStorage {
   async getAll(): Promise<Lieu[]> {
@@ -213,23 +217,172 @@ export class LocalStorageProvider extends BaseStorage {
     );
   }
 
+  // MÉTHODES POUR LES CONSULTATIONS
+  async getAllConsultations(): Promise<Consultation[]> {
+    if (typeof window === "undefined") return [];
+
+    const data = localStorage.getItem(CONSULTATIONS_STORAGE_KEY);
+    if (!data) return [];
+
+    const consultations = JSON.parse(data) as any[];
+    return consultations.map((c) => ({
+      ...c,
+      date: new Date(c.date),
+      createdAt: new Date(c.createdAt),
+      updatedAt: new Date(c.updatedAt),
+    }));
+  }
+
+  async createConsultation(
+    consultationData: Omit<Consultation, "id">
+  ): Promise<Consultation> {
+    const consultations = await this.getAllConsultations();
+    const nouvelleConsultation: Consultation = {
+      ...consultationData,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    consultations.push(nouvelleConsultation);
+    localStorage.setItem(
+      CONSULTATIONS_STORAGE_KEY,
+      JSON.stringify(consultations)
+    );
+    return nouvelleConsultation;
+  }
+
+  async updateConsultation(
+    id: string,
+    consultationData: Partial<Consultation>
+  ): Promise<Consultation> {
+    const consultations = await this.getAllConsultations();
+    const index = consultations.findIndex((c) => c.id === id);
+
+    if (index === -1) {
+      throw new Error("Consultation non trouvée");
+    }
+
+    const consultationModifiee: Consultation = {
+      ...consultations[index],
+      ...consultationData,
+      updatedAt: new Date(),
+    };
+
+    consultations[index] = consultationModifiee;
+    localStorage.setItem(
+      CONSULTATIONS_STORAGE_KEY,
+      JSON.stringify(consultations)
+    );
+    return consultationModifiee;
+  }
+
+  async deleteConsultation(id: string): Promise<void> {
+    const consultations = await this.getAllConsultations();
+    const consultationsFiltrees = consultations.filter((c) => c.id !== id);
+    localStorage.setItem(
+      CONSULTATIONS_STORAGE_KEY,
+      JSON.stringify(consultationsFiltrees)
+    );
+  }
+
+  async getConsultationsByDate(date: Date): Promise<Consultation[]> {
+    const consultations = await this.getAllConsultations();
+    return consultations.filter((c) => {
+      const consultationDate = new Date(c.date);
+      return consultationDate.toDateString() === date.toDateString();
+    });
+  }
+
+  // MÉTHODES POUR LES ACTES
+  async getAllActes(): Promise<Acte[]> {
+    if (typeof window === "undefined") return [];
+
+    const data = localStorage.getItem(ACTES_STORAGE_KEY);
+    if (!data) return [];
+
+    const actes = JSON.parse(data) as any[];
+    return actes.map((a) => ({
+      ...a,
+      createdAt: new Date(a.createdAt),
+      updatedAt: new Date(a.updatedAt),
+    }));
+  }
+
+  async createActe(acteData: Omit<Acte, "id">): Promise<Acte> {
+    const actes = await this.getAllActes();
+    const nouvelActe: Acte = {
+      ...acteData,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    actes.push(nouvelActe);
+    localStorage.setItem(ACTES_STORAGE_KEY, JSON.stringify(actes));
+    return nouvelActe;
+  }
+
+  async updateActe(id: string, acteData: Partial<Acte>): Promise<Acte> {
+    const actes = await this.getAllActes();
+    const index = actes.findIndex((a) => a.id === id);
+
+    if (index === -1) {
+      throw new Error("Acte non trouvé");
+    }
+
+    const acteModifie: Acte = {
+      ...actes[index],
+      ...acteData,
+      updatedAt: new Date(),
+    };
+
+    actes[index] = acteModifie;
+    localStorage.setItem(ACTES_STORAGE_KEY, JSON.stringify(actes));
+    return acteModifie;
+  }
+
+  async deleteActe(id: string): Promise<void> {
+    const actes = await this.getAllActes();
+    const actesFiltres = actes.filter((a) => a.id !== id);
+    localStorage.setItem(ACTES_STORAGE_KEY, JSON.stringify(actesFiltres));
+  }
+
   // NOUVELLES MÉTHODES D'IMPORT DIRECT
   async importLieux(lieux: Lieu[]): Promise<void> {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lieux))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lieux));
   }
 
   async importJournees(journees: Journee[]): Promise<void> {
-    localStorage.setItem(JOURNEES_STORAGE_KEY, JSON.stringify(journees))
+    localStorage.setItem(JOURNEES_STORAGE_KEY, JSON.stringify(journees));
   }
 
   async importVirements(virements: Virement[]): Promise<void> {
-    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements))
+    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements));
+  }
+
+  async importConsultations(consultations: Consultation[]): Promise<void> {
+    localStorage.setItem(
+      CONSULTATIONS_STORAGE_KEY,
+      JSON.stringify(consultations)
+    );
+  }
+
+  async importActes(actes: Acte[]): Promise<void> {
+    localStorage.setItem(ACTES_STORAGE_KEY, JSON.stringify(actes));
   }
 
   // Méthode pour vider complètement les données
   async clearAll(): Promise<void> {
-    localStorage.removeItem(STORAGE_KEY)
-    localStorage.removeItem(JOURNEES_STORAGE_KEY)
-    localStorage.removeItem(VIREMENTS_STORAGE_KEY)
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(JOURNEES_STORAGE_KEY);
+    localStorage.removeItem(VIREMENTS_STORAGE_KEY);
+    localStorage.removeItem(CONSULTATIONS_STORAGE_KEY);
+    localStorage.removeItem(ACTES_STORAGE_KEY); // ← Ajouté
+  }
+
+  // Vider la table des actes
+  async clearActes(): Promise<void> {
+    localStorage.removeItem(ACTES_STORAGE_KEY);
   }
 }

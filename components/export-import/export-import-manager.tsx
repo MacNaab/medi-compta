@@ -1,7 +1,6 @@
 // components/export-import/export-import-manager.tsx
 "use client";
 
-import { useState } from "react";
 import { useLieux } from "@/hooks/useLieux";
 import { useJournees } from "@/hooks/useJournees";
 import { useVirements } from "@/hooks/useVirements";
@@ -19,11 +18,13 @@ import {
   Upload,
   FileText,
   AlertTriangle,
-  CheckCircle2,
   TrendingUp,
   Euro,
   Building,
 } from "lucide-react";
+import { useActes } from "@/hooks/useActes";
+import { useConsultations } from "@/hooks/useConsultations";
+import { toast } from "sonner";
 
 export function ExportImportManager() {
   const { journees } = useJournees();
@@ -32,20 +33,22 @@ export function ExportImportManager() {
   const { virements, getVirementsBruts, importVirements } =
     useVirements(journees);
 
-  const [importStatus, setImportStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [message, setMessage] = useState("");
+  const { actes, importActes } = useActes();
+  const { consultations, importConsultations } = useConsultations();
 
   const handleExportJSON = async () => {
     try {
       const virementsBruts = await getVirementsBruts();
-      ExportImportService.exporterDonnees(lieux, journees, virementsBruts);
-      setMessage("Export JSON réussi !");
-      setImportStatus("success");
+      ExportImportService.exporterDonnees(
+        lieux,
+        journees,
+        virementsBruts,
+        consultations,
+        actes
+      );
+      toast.success("Export JSON réussi !");
     } catch (error) {
-      setMessage("Erreur lors de l'export JSON");
-      setImportStatus("error");
+      toast.error("Erreur lors de l'export JSON");
       console.error(error);
     }
   };
@@ -54,11 +57,9 @@ export function ExportImportManager() {
     try {
       const virementsBruts = await getVirementsBruts();
       ExportImportService.exporterExcel(lieux, journees, virementsBruts);
-      setMessage("Export Excel réussi !");
-      setImportStatus("success");
+      toast.success("Export Excel réussi !");
     } catch (error) {
-      setMessage("Erreur lors de l'export Excel");
-      setImportStatus("error");
+      toast.error("Erreur lors de l'export Excel");
       console.error(error);
     }
   };
@@ -67,33 +68,27 @@ export function ExportImportManager() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setImportStatus("loading");
-    setMessage("Import en cours...");
-
     try {
       const {
         lieux: lieuxImportes,
         journees: journeesImportees,
         virements: virementsImportes,
+        consultations: consultationsImportees,
+        actes: actesImportees,
       } = await ExportImportService.importerDonnees(file);
 
-      setMessage("Import des lieux...");
       await importLieux(lieuxImportes);
-
-      setMessage("Import des journées...");
       await importJournees(journeesImportees);
-
-      setMessage("Import des virements...");
       await importVirements(virementsImportes);
+      await importConsultations(consultationsImportees);
+      await importActes(actesImportees);
 
-      setMessage(
-        `Import réussi ! ${lieuxImportes.length} lieux, ${journeesImportees.length} journées et ${virementsImportes.length} virements importés.`
+      toast.success(
+        `Import réussi ! ${lieuxImportes.length} lieux, ${journeesImportees.length} journées, ${virementsImportes.length} virements, ${consultationsImportees.length} consultations et ${actesImportees.length} actes importés.`
       );
-      setImportStatus("success");
     } catch (error) {
       console.error("Erreur détaillée import:", error);
-      setMessage("Erreur lors de l'import : " + (error as Error).message);
-      setImportStatus("error");
+      toast.error("Erreur lors de l'import : " + (error as Error).message);
     }
 
     // Reset input file
@@ -119,6 +114,8 @@ export function ExportImportManager() {
       virements.length > 0
         ? new Date(virements[0].dateReception).toLocaleDateString("fr-FR")
         : "Aucun",
+    totalConsultations: consultations.length,
+    totalActes: actes.length,
   };
 
   const differenceTheorieRealite =
@@ -284,6 +281,14 @@ export function ExportImportManager() {
                   • <strong>Virements</strong> : {stats.totalVirements}{" "}
                   virement(s) enregistré(s)
                 </li>
+                <li>
+                  • <strong>Consultations</strong> : {stats.totalConsultations}{" "}
+                  consultations(s) enregistré(s)
+                </li>
+                <li>
+                  • <strong>Actes</strong> : {stats.totalActes} acte(s)
+                  enregistré(s)
+                </li>
               </ul>
               <p className="mt-2">
                 <strong>JSON</strong> : Format complet pour
@@ -343,44 +348,6 @@ export function ExportImportManager() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Message de statut */}
-      {importStatus !== "idle" && (
-        <Card
-          className={`mt-6 ${
-            importStatus === "success"
-              ? "bg-green-50 border-green-200"
-              : importStatus === "error"
-              ? "bg-red-50 border-red-200"
-              : "bg-blue-50 border-blue-200"
-          }`}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              {importStatus === "loading" && (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
-              )}
-              {importStatus === "success" && (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              )}
-              {importStatus === "error" && (
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              )}
-              <span
-                className={
-                  importStatus === "success"
-                    ? "text-green-800"
-                    : importStatus === "error"
-                    ? "text-red-800"
-                    : "text-blue-800"
-                }
-              >
-                {message}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Instructions mises à jour */}
       <Card className="mt-6 bg-slate-50">

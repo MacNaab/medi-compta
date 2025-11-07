@@ -8,6 +8,7 @@ const pages = [
   { name: "Saisie quotidienne", href: "/saisie" },
   { name: "Virements", href: "/virements" },
   { name: "Rapports", href: "/rapports" },
+  { name: "Patients", href: "/patient" },
   { name: "Sauvegarde", href: "/sauvegarde" },
 ];
 
@@ -18,7 +19,7 @@ export default function NavBar() {
     <Link
       key={"PageLinks_" + page.name}
       href={page.href}
-      className="text-slate-600 hover:text-blue-600 font-medium transition-colors"
+      className="text-slate-600 hover:text-blue-600 transition-colors md:text-sm"
     >
       {page.name}
     </Link>

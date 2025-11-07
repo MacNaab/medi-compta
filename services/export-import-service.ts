@@ -4,6 +4,8 @@ import { DonneesExport } from "@/types/export";
 import { Lieu } from "@/types/lieu";
 import { Journee } from "@/types/journee";
 import { Virement } from "@/types/virement";
+import { Consultation } from "@/types/consultation";
+import { Acte } from "@/types/acte";
 import XLSX from "xlsx";
 
 export class ExportImportService {
@@ -13,7 +15,9 @@ export class ExportImportService {
   static exporterDonnees(
     lieux: Lieu[],
     journees: Journee[],
-    virements: Virement[]
+    virements: Virement[],
+    consultations: Consultation[],
+    actes: Acte[]
   ): void {
     const donnees: DonneesExport = {
       version: this.VERSION,
@@ -21,6 +25,8 @@ export class ExportImportService {
       lieux,
       journees,
       virements,
+      consultations,
+      actes,
     };
 
     const donneesJSON = JSON.stringify(donnees, null, 2);
@@ -35,6 +41,8 @@ export class ExportImportService {
     lieux: Lieu[];
     journees: Journee[];
     virements: Virement[];
+    consultations: Consultation[];
+    actes: Acte[];
   }> {
     // Changement du type de retour
     return new Promise((resolve, reject) => {
@@ -84,11 +92,28 @@ export class ExportImportService {
             // ID conservé tel quel
           }));
 
+          const consultations = donnees.consultations.map((c) => ({
+            ...c,
+            date: new Date(c.date),
+            createdAt: new Date(c.createdAt),
+            updatedAt: new Date(c.updatedAt),
+            // ID conservé tel quel
+          }));
+
+          const actes = donnees.actes.map((a) => ({
+            ...a,
+            createdAt: new Date(a.createdAt),
+            updatedAt: new Date(a.updatedAt),
+            // ID conservé tel quel
+          }));
+
           // Retourner les données AVEC leurs IDs originaux
           resolve({
             lieux,
             journees,
             virements,
+            consultations,
+            actes,
           });
         } catch (error) {
           console.error("Erreur détaillée import:", error);

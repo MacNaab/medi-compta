@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // components/virements/virement-form.tsx
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { VirementAvecLieu, VirementFormData } from "@/types/virement";
@@ -63,12 +63,17 @@ export function VirementForm({
     formState: { errors },
     setValue,
     watch,
-    reset,
+    control,
   } = useForm<FormData>({
     resolver: zodResolver(virementSchema),
     defaultValues: {
-      statut: "recu",
-      dateReception: new Date(),
+      lieuId: virementExistant?.lieuId || "",
+      dateDebut: virementExistant?.dateDebut || new Date(),
+      dateFin: virementExistant?.dateFin || new Date(),
+      montantRecu: virementExistant?.montantRecu || 0,
+      dateReception: virementExistant?.dateReception || new Date(),
+      statut: virementExistant?.statut || "recu",
+      notes: virementExistant?.notes || "",
     },
   });
 
@@ -76,29 +81,6 @@ export function VirementForm({
   const dateFin = watch("dateFin");
   const montantRecu = watch("montantRecu");
   const lieuId = watch("lieuId");
-
-  // Pré-remplir le formulaire en mode édition
-  useEffect(() => {
-    if (virementExistant) {
-      // MODE ÉDITION : Pré-remplir avec les données existantes
-      reset({
-        lieuId: virementExistant.lieuId,
-        dateDebut: new Date(virementExistant.dateDebut),
-        dateFin: new Date(virementExistant.dateFin),
-        montantRecu: virementExistant.montantRecu,
-        dateReception: new Date(virementExistant.dateReception),
-        statut: virementExistant.statut,
-        notes: virementExistant.notes || "",
-      });
-    } else {
-      // MODE CRÉATION : Valeurs par défaut
-      reset({
-        statut: "recu",
-        dateReception: new Date(),
-        // Les autres champs restent vides
-      });
-    }
-  }, [virementExistant, lieux, reset]);
 
   // Calculer le montant théorique quand les dates ou le lieu changent
   useEffect(() => {
@@ -211,13 +193,16 @@ export function VirementForm({
               <Building className="h-4 w-4" />
               Lieu *
             </Label>
-            <Select
-              value={watch("lieuId")}
-              onValueChange={(value) => {
-                setValue("lieuId", value, { shouldValidate: true });
-              }}
-            >
-              <SelectTrigger className={errors.lieuId ? "border-red-500" : ""}>
+
+              <Controller
+                name="lieuId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  ><SelectTrigger className={errors.lieuId ? "border-red-500" : ""}>
                 <SelectValue placeholder="Sélectionnez un lieu" />
               </SelectTrigger>
               <SelectContent>
@@ -234,6 +219,9 @@ export function VirementForm({
                 ))}
               </SelectContent>
             </Select>
+                )}
+              />
+              
             {errors.lieuId && (
               <p className="text-red-500 text-sm">{errors.lieuId.message}</p>
             )}

@@ -2,6 +2,8 @@
 import { Lieu, LieuFormData } from "./lieu";
 import { Journee } from "./journee";
 import { Virement } from "./virement";
+import { Consultation } from "./consultation";
+import { Acte } from "./acte";
 
 export interface DonneesExport {
   version: string;
@@ -9,6 +11,8 @@ export interface DonneesExport {
   lieux: Lieu[];
   journees: Journee[];
   virements: Virement[];
+  consultations: Consultation[];
+  actes: Acte[];
 }
 
 export interface DonneesImport {
