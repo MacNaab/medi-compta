@@ -215,31 +215,21 @@ export class LocalStorageProvider extends BaseStorage {
 
   // NOUVELLES MÉTHODES D'IMPORT DIRECT
   async importLieux(lieux: Lieu[]): Promise<void> {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lieux))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lieux));
   }
 
   async importJournees(journees: Journee[]): Promise<void> {
-    localStorage.setItem(JOURNEES_STORAGE_KEY, JSON.stringify(journees))
+    localStorage.setItem(JOURNEES_STORAGE_KEY, JSON.stringify(journees));
   }
 
   async importVirements(virements: Virement[]): Promise<void> {
-<<<<<<< Updated upstream
-    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements))
-=======
     localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements));
->>>>>>> Stashed changes
   }
 
   // Méthode pour vider complètement les données
   async clearAll(): Promise<void> {
-<<<<<<< Updated upstream
-    localStorage.removeItem(STORAGE_KEY)
-    localStorage.removeItem(JOURNEES_STORAGE_KEY)
-    localStorage.removeItem(VIREMENTS_STORAGE_KEY)
-=======
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(JOURNEES_STORAGE_KEY);
     localStorage.removeItem(VIREMENTS_STORAGE_KEY);
->>>>>>> Stashed changes
   }
 }

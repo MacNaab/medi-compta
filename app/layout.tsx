@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,12 +25,8 @@ export default function RootLayout({
           <NavBar />
           {/* Contenu principal */}
           <main className="py-8">{children}</main>
-<<<<<<< Updated upstream
         </div>
-=======
-        </main>
         <Toaster position="top-center" richColors />
->>>>>>> Stashed changes
       </body>
     </html>
   );

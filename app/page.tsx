@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/page.tsx
+"use client";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Plus,
   BarChart3,
   HandCoins,
   DatabaseBackup,
@@ -18,8 +19,6 @@ import {
   Lightbulb,
 } from "lucide-react";
 
-<<<<<<< Updated upstream
-=======
 function CardLink({
   href,
   title,
@@ -85,8 +84,18 @@ const features = [
   },
 ];
 
->>>>>>> Stashed changes
 export default function HomePage() {
+  const cards = features.map((feature) => (
+    <CardLink
+      key={feature.title}
+      href={feature.href}
+      title={feature.title}
+      description={feature.description}
+      Icon={feature.Icon}
+      color={feature.color}
+    />
+  ));
+
   return (
     <div className="container mx-auto px-6">
       {/* Hero section */}
@@ -101,87 +110,11 @@ export default function HomePage() {
       </div>
 
       {/* Cartes de fonctionnalités */}
-      <div className="grid md:grid-cols-3 gap-6 mx-auto">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <Hospital className="h-8 w-8 text-blue-600 mb-2" />
-            <CardTitle>Lieux de travail</CardTitle>
-            <CardDescription>
-              Gérez vos remplacements dans les cabinets avec les pourcentages de rétrocession
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/lieux">
-                <Plus className="h-4 w-4 mr-2" />
-                Gérer les lieux
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="grid md:grid-cols-3 gap-6 mx-auto">{cards}</div>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <BarChart3 className="h-8 w-8 text-green-600 mb-2" />
-            <CardTitle>Saisie quotidienne</CardTitle>
-            <CardDescription>
-              Déclarez vos revenus journaliers selon votre lieu avec calcul automatique des honoraires
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/saisie">Commencer la saisie</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <HandCoins className="h-8 w-8 text-rose-600 mb-2" />
-            <CardTitle>Virements</CardTitle>
-            <CardDescription>
-              Suivez vos virements réels et comparez avec les honoraires
-              théoriques
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/rapports">Voir les virements</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <Landmark className="h-8 w-8 text-violet-600 mb-2" />
-            <CardTitle>Rapports</CardTitle>
-            <CardDescription>
-              Génération automatique des déclarations annuelles et trimestrielles
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/rapports">Voir les rapports</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-            <DatabaseBackup className="h-8 w-8 text-amber-600 mb-2" />
-            <CardTitle>Sauvegarder</CardTitle>
-            <CardDescription>
-              Exportez et importez l&apos;ensemble de vos données au format JSON ou XLSX
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/sauvegarde">Sauvegarder</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
+      {/* Bouton de connexion */}
+      <div className="grid md:grid-cols-3 mt-6 mx-auto">
+        <Card className="hover:shadow-lg transition-shadow md:col-start-2">
           <CardHeader>
             <Lightbulb className="h-8 w-8 text-yellow-400 mb-2" />
             <CardTitle>Nouvelle idée</CardTitle>
@@ -191,7 +124,12 @@ export default function HomePage() {
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full bg-sky-600 hover:bg-sky-800">
-              <a href="https://github.com/MacNaab/medi-compta/issues" target="_blank">Contactez nous</a>
+              <a
+                href="https://github.com/MacNaab/medi-compta/issues"
+                target="_blank"
+              >
+                Contactez nous
+              </a>
             </Button>
           </CardContent>
         </Card>

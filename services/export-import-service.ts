@@ -13,11 +13,7 @@ export class ExportImportService {
   static exporterDonnees(
     lieux: Lieu[],
     journees: Journee[],
-<<<<<<< Updated upstream
-    virements: Virement[]
-=======
     virements: Virement[],
->>>>>>> Stashed changes
   ): void {
     const donnees: DonneesExport = {
       version: this.VERSION,
