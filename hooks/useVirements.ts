@@ -3,12 +3,14 @@ import { useState, useEffect, useMemo } from "react";
 import { Virement, VirementFormData, VirementAvecLieu } from "@/types/virement";
 import { JourneeAvecLieu } from "@/types/journee";
 import { LocalStorageProvider } from "@/lib/storage/localStorage";
+import { useCloud } from "./useCloud";
 
 const storage = new LocalStorageProvider();
 
 export function useVirements(journees: JourneeAvecLieu[]) {
   const [virements, setVirements] = useState<Virement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { insertToCloud, updateToCloud, deleteToCloud } = useCloud();
 
   useEffect(() => {
     loadVirements();
@@ -70,6 +72,7 @@ export function useVirements(journees: JourneeAvecLieu[]) {
     };
     const nouveauVirementEnregistre = await storage.createVirement(nouveauVirement);
     await loadVirements();
+    await insertToCloud("virements", nouveauVirementEnregistre);
     return nouveauVirementEnregistre;
   };
 
@@ -79,12 +82,14 @@ export function useVirements(journees: JourneeAvecLieu[]) {
   ): Promise<Virement> => {
     const virementModifie = await storage.updateVirement(id, data);
     await loadVirements();
+    await updateToCloud("virements", virementModifie);
     return virementModifie;
   };
 
   const deleteVirement = async (id: string): Promise<void> => {
     await storage.deleteVirement(id);
     await loadVirements();
+    await deleteToCloud("virements", id);
   };
 
   /*

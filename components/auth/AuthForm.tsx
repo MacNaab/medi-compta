@@ -3,6 +3,17 @@ import { useEffect, useState } from "react";
 import { AuthView } from "./AuthContainer";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { PasswordInput } from "@/components/ui/input-password";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { useCloud } from "@/hooks/useCloud";
+import { toast } from "sonner";
+import { Lieu } from "@/types/lieu";
+import { Journee } from "@/types/journee";
+import { Virement } from "@/types/virement";
+import { useLieux } from "@/hooks/useLieux";
+import { useJournees } from "@/hooks/useJournees";
+import { useVirements } from "@/hooks/useVirements";
 
 interface AuthFormProps {
   view: "signin" | "signup";
@@ -15,6 +26,12 @@ export function AuthForm({ view, onViewChange }: AuthFormProps) {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  const { importLieux } = useLieux();
+  const { journees, importJournees } = useJournees();
+  const { importVirements } = useVirements(journees);
+  const { cloudToDonnees } = useCloud();
 
   const router = useRouter();
   const supabase = createClient();
@@ -60,6 +77,9 @@ export function AuthForm({ view, onViewChange }: AuthFormProps) {
         if (error) throw error;
 
         if (data.user) {
+          if (checked) {
+            await handleImportCloud();
+          }
           router.push("/settings");
         }
       }
@@ -69,6 +89,65 @@ export function AuthForm({ view, onViewChange }: AuthFormProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImportCloud = () => {
+    const importPromise = async (): Promise<{
+      lieuxCount: number;
+      journeesCount: number;
+      virementsCount: number;
+      totalItems: number;
+    }> => {
+      try {
+        const donnees = await cloudToDonnees();
+
+        const lieuxImportes: Lieu[] = donnees?.lieux || [];
+        const journeesImportees: Journee[] = donnees?.journees || [];
+        const virementsImportes: Virement[] = donnees?.virements || [];
+
+        // Validation des données avant import
+        if (
+          lieuxImportes.length === 0 &&
+          journeesImportees.length === 0 &&
+          virementsImportes.length === 0
+        ) {
+          throw new Error("Aucune donnée à importer");
+        }
+
+        await importLieux(lieuxImportes);
+        await importJournees(journeesImportees);
+        await importVirements(virementsImportes);
+
+        return {
+          lieuxCount: lieuxImportes.length,
+          journeesCount: journeesImportees.length,
+          virementsCount: virementsImportes.length,
+          totalItems:
+            lieuxImportes.length +
+            journeesImportees.length +
+            virementsImportes.length,
+        };
+      } catch (error) {
+        console.error("Erreur détaillée import:", error);
+        throw error; // Important : propager l'erreur pour toast.promise
+      }
+    };
+
+    toast.promise(importPromise(), {
+      loading: "📤 Importation en cours...",
+      success: (data) => {
+        if (data.totalItems === 0) {
+          return "Aucune donnée à importer";
+        }
+        return `${data.lieuxCount} lieu(x), ${data.journeesCount} journée(s) et ${data.virementsCount} virement(s) importés avec succès`;
+      },
+      error: (error: Error) => {
+        if (error.message.includes("Aucune donnée")) {
+          return error.message;
+        }
+        return `Échec de l'import : ${error.message}`;
+      },
+    });
   };
 
   return (
@@ -122,9 +201,8 @@ export function AuthForm({ view, onViewChange }: AuthFormProps) {
         >
           Mot de passe
         </label>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -134,15 +212,38 @@ export function AuthForm({ view, onViewChange }: AuthFormProps) {
       </div>
 
       {view === "signin" && (
-        <div className="text-right">
-          <button
-            type="button"
-            onClick={() => onViewChange("forgot-password")}
-            className="text-sm text-blue-600 hover:text-blue-500 font-medium"
-          >
-            Mot de passe oublié ?
-          </button>
-        </div>
+        <>
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="terms-2"
+              checked={checked}
+              onClick={() => setChecked(!checked)}
+            />
+            <div className="grid gap-2">
+              <Label htmlFor="terms-2" className="cursor-pointer">
+                Importer les données à la connexion
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                En cochant cette case, vous remplacez vos données locales par
+                les données du cloud lors de la connexion.
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Vous pouvez synchroniser vos données locales vers votre cloud
+                sur la page de paramètrage de votre compte.
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <button
+              type="button"
+              onClick={() => onViewChange("forgot-password")}
+              className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+            >
+              Mot de passe oublié ?
+            </button>
+          </div>
+        </>
       )}
 
       <button
