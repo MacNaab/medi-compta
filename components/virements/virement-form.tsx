@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // components/virements/virement-form.tsx
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { VirementAvecLieu, VirementFormData } from "@/types/virement";
@@ -64,12 +64,15 @@ export function VirementForm({
     setValue,
     watch,
     reset,
+    control,
   } = useForm<FormData>({
     resolver: zodResolver(virementSchema),
-    defaultValues: {
-      statut: "recu",
-      dateReception: new Date(),
-    },
+    defaultValues: virementExistant
+      ? virementExistant
+      : {
+          statut: "recu",
+          dateReception: new Date(),
+        },
   });
 
   const dateDebut = watch("dateDebut");
@@ -211,29 +214,33 @@ export function VirementForm({
               <Building className="h-4 w-4" />
               Lieu *
             </Label>
-            <Select
-              value={watch("lieuId")}
-              onValueChange={(value) => {
-                setValue("lieuId", value, { shouldValidate: true });
-              }}
-            >
-              <SelectTrigger className={errors.lieuId ? "border-red-500" : ""}>
-                <SelectValue placeholder="Sélectionnez un lieu" />
-              </SelectTrigger>
-              <SelectContent>
-                {lieux.map((lieu) => (
-                  <SelectItem key={lieu.id} value={lieu.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: lieu.couleur }}
-                      />
-                      {lieu.nom}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            <Controller
+              name="lieuId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger
+                    className={errors.lieuId ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Sélectionnez un lieu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lieux.map((lieu) => (
+                      <SelectItem key={lieu.id} value={lieu.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: lieu.couleur }}
+                          />
+                          {lieu.nom}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.lieuId && (
               <p className="text-red-500 text-sm">{errors.lieuId.message}</p>
             )}

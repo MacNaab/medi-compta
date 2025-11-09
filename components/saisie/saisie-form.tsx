@@ -1,6 +1,6 @@
 // components/saisie/saisie-form.tsx
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { JourneeAvecLieu, JourneeFormData } from "@/types/journee";
@@ -62,20 +62,17 @@ export function SaisieForm({
     setValue,
     watch,
     reset,
+    control,
   } = useForm<FormData>({
     resolver: zodResolver(saisieSchema),
-    defaultValues: {
-      date: datePredefinie || new Date(), // Utiliser la date prédéfinie si fournie
-    },
+    defaultValues: journeeExistante
+      ? { ...journeeExistante }
+      : {
+          date: datePredefinie || new Date(),
+        },
   });
 
   const recettesTotales = watch("recettesTotales");
-
-  useEffect(() => {
-    if (datePredefinie) {
-      setValue("date", datePredefinie);
-    }
-  }, [datePredefinie, setValue]);
 
   // Format de la date pour l'input HTML
   const formatDateForInput = (date: Date): string => {
@@ -103,7 +100,7 @@ export function SaisieForm({
     setValue("date", newDate);
   };
 
-    useEffect(() => {
+  useEffect(() => {
     if (journeeExistante) {
       // MODE ÉDITION : Pré-remplir avec les données existantes
       const lieu = lieux.find((l) => l.id === journeeExistante.lieuId);
@@ -135,12 +132,6 @@ export function SaisieForm({
     selectedLieu && recettesTotales
       ? (recettesTotales * selectedLieu.pourcentageRetrocession) / 100
       : 0;
-
-  const handleLieuChange = (lieuId: string) => {
-    setValue("lieuId", lieuId);
-    const lieu = lieux.find((l) => l.id === lieuId);
-    setSelectedLieu(lieu || null);
-  };
 
   const handleRecettesChange = (value: string) => {
     setRecettes(value);
@@ -191,24 +182,35 @@ export function SaisieForm({
               <Building className="h-4 w-4" />
               Lieu de travail *
             </Label>
-            <Select onValueChange={handleLieuChange}>
-              <SelectTrigger className={errors.lieuId ? "border-red-500" : ""}>
-                <SelectValue placeholder="Sélectionnez un lieu" />
-              </SelectTrigger>
-              <SelectContent>
-                {lieux.map((lieu) => (
-                  <SelectItem key={lieu.id} value={lieu.id}>
-                    <div className="flex justify-between items-center w-full">
-                      <span>{lieu.nom}</span>
-                      <span className="text-sm text-slate-500 ml-2">
-                        ({lieu.pourcentageRetrocession}%)
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
 
+            <Controller
+              name="lieuId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <SelectTrigger
+                    className={errors.lieuId ? "border-red-500" : ""}
+                  >
+                    <SelectValue placeholder="Sélectionnez un lieu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lieux.map((lieu) => (
+                      <SelectItem key={lieu.id} value={lieu.id}>
+                        <div className="flex justify-between items-center w-full">
+                          <span>{lieu.nom}</span>
+                          <span className="text-sm text-slate-500 ml-2">
+                            ({lieu.pourcentageRetrocession}%)
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.lieuId && (
               <p className="text-red-500 text-sm">{errors.lieuId.message}</p>
             )}
