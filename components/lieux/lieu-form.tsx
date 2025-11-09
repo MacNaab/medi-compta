@@ -142,7 +142,7 @@ export function LieuForm({
               type="number"
               min="0"
               max="100"
-              step="0.1"
+              step="1"
               placeholder="80"
               {...register("pourcentageRetrocession", { valueAsNumber: true })}
               className={errors.pourcentageRetrocession ? "border-red-500" : ""}

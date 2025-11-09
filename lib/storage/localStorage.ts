@@ -223,13 +223,23 @@ export class LocalStorageProvider extends BaseStorage {
   }
 
   async importVirements(virements: Virement[]): Promise<void> {
+<<<<<<< Updated upstream
     localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements))
+=======
+    localStorage.setItem(VIREMENTS_STORAGE_KEY, JSON.stringify(virements));
+>>>>>>> Stashed changes
   }
 
   // Méthode pour vider complètement les données
   async clearAll(): Promise<void> {
+<<<<<<< Updated upstream
     localStorage.removeItem(STORAGE_KEY)
     localStorage.removeItem(JOURNEES_STORAGE_KEY)
     localStorage.removeItem(VIREMENTS_STORAGE_KEY)
+=======
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(JOURNEES_STORAGE_KEY);
+    localStorage.removeItem(VIREMENTS_STORAGE_KEY);
+>>>>>>> Stashed changes
   }
 }

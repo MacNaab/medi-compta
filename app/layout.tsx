@@ -24,7 +24,12 @@ export default function RootLayout({
           <NavBar />
           {/* Contenu principal */}
           <main className="py-8">{children}</main>
+<<<<<<< Updated upstream
         </div>
+=======
+        </main>
+        <Toaster position="top-center" richColors />
+>>>>>>> Stashed changes
       </body>
     </html>
   );

@@ -281,7 +281,7 @@ export function VirementForm({
               <Input
                 id="montantRecu"
                 type="number"
-                step="0.01"
+                step="1"
                 min="0"
                 {...register("montantRecu", { valueAsNumber: true })}
                 className={errors.montantRecu ? "border-red-500" : ""}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/virement.ts
 export interface Virement {
   id: string
@@ -10,6 +11,9 @@ export interface Virement {
   notes?: string
   createdAt: Date
   updatedAt: Date
+  lieu?: any
+  montantTheorique?: number
+  difference?: number
 }
 
 export interface VirementAvecLieu extends Virement {

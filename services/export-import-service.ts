@@ -13,7 +13,11 @@ export class ExportImportService {
   static exporterDonnees(
     lieux: Lieu[],
     journees: Journee[],
+<<<<<<< Updated upstream
     virements: Virement[]
+=======
+    virements: Virement[],
+>>>>>>> Stashed changes
   ): void {
     const donnees: DonneesExport = {
       version: this.VERSION,
@@ -106,6 +110,41 @@ export class ExportImportService {
     });
   }
 
+  // convertir le json en datalocale
+  static async cloudToDonnees(donnees: Omit<DonneesExport, "version" | "dateExport">) {
+    // Convertir les dates (MAIS GARDER LES IDs ORIGINAUX)
+    const lieux = donnees.lieux.map((l) => ({
+      ...l,
+      createdAt: new Date(l.createdAt),
+      updatedAt: new Date(l.updatedAt),
+      // ID conservé tel quel
+    }));
+
+    const journees = donnees.journees.map((j) => ({
+      ...j,
+      date: new Date(j.date),
+      createdAt: new Date(j.createdAt),
+      updatedAt: new Date(j.updatedAt),
+      // ID conservé tel quel
+    }));
+
+    const virements = donnees.virements.map((v) => ({
+      ...v,
+      dateDebut: new Date(v.dateDebut),
+      dateFin: new Date(v.dateFin),
+      dateReception: new Date(v.dateReception),
+      createdAt: new Date(v.createdAt),
+      updatedAt: new Date(v.updatedAt),
+      // ID conservé tel quel
+    }));
+
+    return {
+      lieux,
+      journees,
+      virements,
+    };
+  }
+
   private static validerIntegriteDonnees(donnees: DonneesExport): string[] {
     const erreurs: string[] = [];
 
@@ -146,8 +185,12 @@ export class ExportImportService {
     return erreurs;
   }
 
-  // Export vers Excel 
-  static exporterExcel(lieux: Lieu[], journees: Journee[], virements: Virement[]): void {
+  // Export vers Excel
+  static exporterExcel(
+    lieux: Lieu[],
+    journees: Journee[],
+    virements: Virement[]
+  ): void {
     // utilisation sheetjs
     const workbook = XLSX.utils.book_new();
     const sheetLieux = XLSX.utils.json_to_sheet(lieux);
@@ -156,7 +199,10 @@ export class ExportImportService {
     XLSX.utils.book_append_sheet(workbook, sheetLieux, "Lieux");
     XLSX.utils.book_append_sheet(workbook, sheetJournees, "Journees");
     XLSX.utils.book_append_sheet(workbook, sheetVirements, "Virements");
-    XLSX.writeFile(workbook, `sauvegarde-honoraires-${new Date().toISOString().split("T")[0]}.xlsx`);
+    XLSX.writeFile(
+      workbook,
+      `sauvegarde-honoraires-${new Date().toISOString().split("T")[0]}.xlsx`
+    );
   }
 
   private static validerDonnees(donnees: any): donnees is DonneesExport {

@@ -282,7 +282,7 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
                   key={lieu.lieuId}
                   className="border border-amber-200 rounded-lg p-4 bg-white"
                 >
-                  <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center justify-center gap-3 mb-3">
                     <div
                       className="w-4 h-4 rounded-full shrink-0"
                       style={{ backgroundColor: lieu.couleurLieu }}
@@ -307,13 +307,31 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
                   </div>
 
                   <div className="text-sm text-slate-600 space-y-1">
-                    {lieu.dernierVirement && (
-                      <div>
-                        Dernier virement :{" "}
-                        {lieu.dernierVirement.toLocaleDateString("fr-FR")}
-                      </div>
-                    )}
-                    <div className="text-xs text-amber-700 mt-2">
+                    <div className="flex justify-around">
+                      {lieu.dernierVirement && (
+                        <div>
+                          Dernier virement :{" "}
+                          {lieu.dernierVirement.toLocaleDateString("fr-FR")}
+                        </div>
+                      )}
+                      {lieu.virements && (
+                        <div className="border-2 rounded p-1 border-red-600">
+                          Déficit :{" "}
+                          <strong>
+                            {
+                              // somme des diférences des virements
+                              lieu.virements.reduce(
+                                (total, virement) =>
+                                  total + virement.difference,
+                                0
+                              )
+                            }
+                          </strong>
+                          €
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-amber-700 text-center mt-2">
                       💡 Recommandation : Relance du cabinet pour régularisation
                     </div>
                   </div>
@@ -431,10 +449,26 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
       >
         <CardContent className="p-6">
           <div className="text-center">
-            <h3 className={`" text-lg font-semibold " ${tauxCompletion >= 95 ? "text-green-800" : tauxCompletion >= 80 ? "text-amber-800" : "text-red-800"} `}>
+            <h3
+              className={`" text-lg font-semibold " ${
+                tauxCompletion >= 95
+                  ? "text-green-800"
+                  : tauxCompletion >= 80
+                  ? "text-amber-800"
+                  : "text-red-800"
+              } `}
+            >
               Bilan de l&apos;année {rapport.annee}
             </h3>
-            <p className={`" mt-4 " ${tauxCompletion >= 95 ? "text-green-700" : tauxCompletion >= 80 ? "text-amber-700" : "text-red-700"} `}>
+            <p
+              className={`" mt-4 " ${
+                tauxCompletion >= 95
+                  ? "text-green-700"
+                  : tauxCompletion >= 80
+                  ? "text-amber-700"
+                  : "text-red-700"
+              } `}
+            >
               {tauxCompletion >= 95
                 ? "✅ Excellente année ! La quasi-totalité des virements ont été reçus sans problème."
                 : tauxCompletion >= 80

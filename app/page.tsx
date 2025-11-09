@@ -18,6 +18,74 @@ import {
   Lightbulb,
 } from "lucide-react";
 
+<<<<<<< Updated upstream
+=======
+function CardLink({
+  href,
+  title,
+  description,
+  Icon,
+  color,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  Icon: any;
+  color: string;
+}) {
+  return (
+    <Link href={href}>
+      <Card className="hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <Icon className={color + " w-8 h-8"} />
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+      </Card>
+    </Link>
+  );
+}
+
+const features = [
+  {
+    href: "/lieux",
+    title: "Lieux d'exercice",
+    description:
+      "Gérez vos remplacements dans les cabinets avec les pourcentages de rétrocession",
+    Icon: Hospital,
+    color: "text-blue-600",
+  },
+  {
+    href: "/saisie",
+    title: "Saisie quotidienne",
+    description: "Déclarez vos revenus journaliers selon votre lieu avec calcul automatique des honoraires",
+    Icon: BarChart3,
+    color: "text-green-600",
+  },
+  {
+    href: "/virements",
+    title: "Virements",
+    description: "Suivez vos virements réels et comparez avec les honoraires théoriques",
+    Icon: HandCoins,
+    color: "text-rose-600",
+  },
+  {
+    href: "/rapports",
+    title: "Rapports",
+    description: "Génération automatique des déclarations annuelles et trimestrielles",
+    Icon: Landmark,
+    color: "text-violet-600",
+  },
+  {
+    href: "/sauvegarde",
+    title: "Sauvegarde",
+    description: "Exportez et importez l'ensemble de vos données au format JSON ou XLSX",
+    Icon: DatabaseBackup,
+    color: "text-amber-600",
+  },
+];
+
+>>>>>>> Stashed changes
 export default function HomePage() {
   return (
     <div className="container mx-auto px-6">

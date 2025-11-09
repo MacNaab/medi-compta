@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // types/journee.ts
 export interface Journee {
   id: string
@@ -8,6 +9,7 @@ export interface Journee {
   notes?: string
   createdAt: Date
   updatedAt: Date
+  lieu?: any
 }
 
 export interface JourneeAvecLieu extends Journee {

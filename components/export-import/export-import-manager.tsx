@@ -24,14 +24,18 @@ import {
   Euro,
   Building,
 } from "lucide-react";
+<<<<<<< Updated upstream
+=======
+import { toast } from "sonner";
+>>>>>>> Stashed changes
 
 export function ExportImportManager() {
-  const { journees } = useJournees();
   const { lieux, importLieux } = useLieux();
-  const { importJournees } = useJournees();
+  const { journees, importJournees } = useJournees();
   const { virements, getVirementsBruts, importVirements } =
     useVirements(journees);
 
+<<<<<<< Updated upstream
   const [importStatus, setImportStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
@@ -43,6 +47,17 @@ export function ExportImportManager() {
       ExportImportService.exporterDonnees(lieux, journees, virementsBruts);
       setMessage("Export JSON réussi !");
       setImportStatus("success");
+=======
+  const handleExportJSON = async () => {
+    try {
+      const virementsBruts = await getVirementsBruts();
+      ExportImportService.exporterDonnees(
+        lieux,
+        journees,
+        virementsBruts,
+      );
+      toast.success("Export JSON réussi !");
+>>>>>>> Stashed changes
     } catch (error) {
       setMessage("Erreur lors de l'export JSON");
       setImportStatus("error");
@@ -74,11 +89,16 @@ export function ExportImportManager() {
       const {
         lieux: lieuxImportes,
         journees: journeesImportees,
+<<<<<<< Updated upstream
         virements: virementsImportes,
+=======
+        virements: virementsImportes
+>>>>>>> Stashed changes
       } = await ExportImportService.importerDonnees(file);
 
       setMessage("Import des lieux...");
       await importLieux(lieuxImportes);
+<<<<<<< Updated upstream
 
       setMessage("Import des journées...");
       await importJournees(journeesImportees);
@@ -88,6 +108,13 @@ export function ExportImportManager() {
 
       setMessage(
         `Import réussi ! ${lieuxImportes.length} lieux, ${journeesImportees.length} journées et ${virementsImportes.length} virements importés.`
+=======
+      await importJournees(journeesImportees);
+      await importVirements(virementsImportes);
+
+      toast.success(
+        `Import réussi ! ${lieuxImportes.length} lieux, ${journeesImportees.length} journées et ${virementsImportes.length} virements actes importés.`
+>>>>>>> Stashed changes
       );
       setImportStatus("success");
     } catch (error) {

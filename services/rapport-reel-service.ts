@@ -43,6 +43,7 @@ export interface LieuAvecProblemeVirement {
   virementsEnAttente: number;
   virementsPartiels: number;
   dernierVirement?: Date;
+  virements: VirementAvecLieu[];
 }
 
 export class RapportReelService {
@@ -155,6 +156,7 @@ export class RapportReelService {
       lieux,
       annee
     );
+    
     // Fusionner les virements réels et automatiques
     const tousLesVirements = [...virements, ...virementsAutomatiques];
 
@@ -188,42 +190,6 @@ export class RapportReelService {
       virements,
       annee
     );
-
-    /*
-    // Détecter les lieux avec problèmes de virements
-    const lieuxAvecProblemes: LieuAvecProblemeVirement[] = lieux
-      .map((lieu) => {
-        const virementsLieu = virements.filter((v) => v.lieuId === lieu.id);
-        const virementsEnAttente = virementsLieu.filter(
-          (v) => v.statut === "attente"
-        ).length;
-        const virementsPartiels = virementsLieu.filter(
-          (v) => v.statut === "partiel"
-        ).length;
-        const dernierVirement =
-          virementsLieu.length > 0
-            ? new Date(
-                Math.max(
-                  ...virementsLieu.map((v) =>
-                    new Date(v.dateReception).getTime()
-                  )
-                )
-              )
-            : undefined;
-
-        return {
-          lieuId: lieu.id,
-          nomLieu: lieu.nom,
-          couleurLieu: lieu.couleur,
-          virementsEnAttente,
-          virementsPartiels,
-          dernierVirement,
-        };
-      })
-      .filter(
-        (lieu) => lieu.virementsEnAttente > 0 || lieu.virementsPartiels > 0
-      );
-    */
 
     return {
       annee,
@@ -324,15 +290,6 @@ export class RapportReelService {
     return virementsAutomatiques;
   }
 
-  private static memesDates(date1: Date, date2: Date): boolean {
-    // Comparer seulement l'année, le mois et le jour
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
-  }
-
   private static virementExistePourPeriode(
     virementsExistants: VirementAvecLieu[],
     lieuId: string,
@@ -405,6 +362,7 @@ export class RapportReelService {
           virementsEnAttente,
           virementsPartiels,
           dernierVirement,
+          virements: virementsLieu,
         });
       }
     });
