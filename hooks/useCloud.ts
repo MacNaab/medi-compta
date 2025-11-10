@@ -122,7 +122,6 @@ export function useCloud() {
       }
     }
     if (journeesAEnregistrer.length > 0) {
-      console.log("journeesAEnregistrer", journeesAEnregistrer);
       const { error } = await supabase
         .from("journees")
         .insert(journeesAEnregistrer);

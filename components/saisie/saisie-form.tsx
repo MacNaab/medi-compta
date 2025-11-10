@@ -228,7 +228,7 @@ export function SaisieForm({
             <Input
               id="recettesTotales"
               type="number"
-              step="1"
+              step="0.01"
               min="0"
               placeholder="0,00"
               value={recettes}

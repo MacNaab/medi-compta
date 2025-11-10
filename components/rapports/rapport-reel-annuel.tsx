@@ -10,10 +10,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Clock,
-  AlertTriangle,
   CheckCircle2,
   TrendingUp,
   Calendar,
+  Euro,
+  AlertTriangle,
 } from "lucide-react";
 
 interface RapportReelAnnuelProps {
@@ -21,31 +22,58 @@ interface RapportReelAnnuelProps {
 }
 
 export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
-  const totalAttenduAutomatique = rapport.virementsAutomatiques.reduce(
-    (sum, v) => sum + v.montantTheorique,
-    0
-  );
+  // Calculs automatiques basés sur les différences
+  const virementsComplets = rapport.trimestres
+    .flatMap((t) =>
+      t.donneesParLieu.flatMap((lieu) => lieu.virementsComplets || 0)
+    )
+    .reduce((sum, count) => sum + count, 0);
 
-  const totalVirementsReels = rapport.trimestres.reduce(
-    (sum, t) => sum + t.totalVirements,
-    0
-  );
-  const totalVirementsAttendus = rapport.virementsAutomatiques.reduce(
-    (sum, v) => sum + v.montantTheorique,
-    0
-  );
-  const totalTheoriqueGlobal = totalVirementsReels + totalVirementsAttendus;
+  const virementsPartiels = rapport.trimestres
+    .flatMap((t) =>
+      t.donneesParLieu.flatMap((lieu) => lieu.virementsPartiels || 0)
+    )
+    .reduce((sum, count) => sum + count, 0);
 
-  // Taux basé sur ce qui a été reçu vs ce qui est attendu au total
+  const virementsEnAttente = rapport.virementsAutomatiques.length;
+
+  // Récupérer tous les virements partiels de l'année
+  const tousVirementsPartiels = rapport.trimestres
+    .flatMap((trimestre) =>
+      trimestre.donneesParLieu.flatMap((lieu) =>
+        lieu.virementsPartiels > 0
+          ? {
+              lieuNom: lieu.nomLieu,
+              lieuCouleur: lieu.couleurLieu,
+              trimestre: trimestre.trimestre,
+              montantManquant: lieu.totalVirementsManquants || 0,
+              nombrePartiels: lieu.virementsPartiels,
+            }
+          : []
+      )
+    )
+    .filter(Boolean);
+
+  // Calcul précis du taux de complétion
+  const totalVirementsReels = rapport.totalVirements;
+  const totalAttenduTheorique =
+    rapport.virementsAutomatiques.reduce(
+      (sum, v) => sum + v.montantTheorique,
+      0
+    ) + totalVirementsReels;
+
   const tauxCompletion =
-    totalTheoriqueGlobal > 0
-      ? (totalVirementsReels / totalTheoriqueGlobal) * 100
-      : 100;
+    totalAttenduTheorique > 0
+      ? (totalVirementsReels / totalAttenduTheorique) * 100
+      : 0;
 
   const moyenneMensuelle = totalVirementsReels / 12;
-  const virementsEnRetard = rapport.virementsAutomatiques.filter(
-    (v) => v.statut === "manquant"
-  ).length;
+
+  // Calcul du déficit total des virements partiels
+  const deficitTotal = tousVirementsPartiels.reduce(
+    (total, virement) => total + virement.montantManquant,
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -66,7 +94,7 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
             <div className="flex flex-col items-end gap-2">
               <Badge
                 variant="secondary"
-                className={`" border text-lg px-4 py-2 " ${
+                className={`border text-lg px-4 py-2 ${
                   tauxCompletion >= 95
                     ? "bg-green-50 border-green-200 text-green-800"
                     : tauxCompletion >= 80
@@ -75,48 +103,57 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
                 }`}
               >
                 Taux de complétion :{" "}
-                <strong>{tauxCompletion.toFixed(1)}%</strong>{" "}
+                <strong>{tauxCompletion.toFixed(1)}%</strong>
               </Badge>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Statistiques principales */}
+      {/* Statistiques principales améliorées */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+              <Euro className="h-4 w-4" />
               Total Annuel
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {rapport.totalVirements.toFixed(2)} €
+            <div className="text-2xl text-center font-bold text-green-600">
+              {totalVirementsReels.toFixed(2)} €
             </div>
-            <div className="text-sm text-slate-600 mt-1">
+            <div className="text-sm text-center text-slate-600 mt-1">
               {moyenneMensuelle.toFixed(2)} €/mois
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader>
             <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4" />
               Virements complets
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {rapport.trimestres.reduce(
-                (sum, t) => sum + t.nombreVirements,
-                0
-              ) -
-                rapport.totalVirementsEnAttente -
-                rapport.totalVirementsPartiels}
+            <div className="text-2xl text-center font-bold text-green-600">
+              {virementsComplets}
             </div>
-            <div className="text-sm text-slate-600 mt-1">Sans problème</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Virements partiels
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl text-center font-bold text-amber-600">
+              {virementsPartiels}
+            </div>
           </CardContent>
         </Card>
 
@@ -128,30 +165,14 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">
-              {rapport.virementsAutomatiques.length}
+            <div className="text-2xl text-center font-bold text-blue-600">
+              {virementsEnAttente}
             </div>
-            <div className="text-sm text-slate-600 mt-1">À recevoir</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Partiels
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {rapport.totalVirementsPartiels}
-            </div>
-            <div className="text-sm text-slate-600 mt-1">Incomplets</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Analyse par trimestre */}
+      {/* Analyse par trimestre améliorée */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -159,285 +180,465 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
             Répartition par trimestre
           </CardTitle>
           <CardDescription>
-            Évolution des virements reçus au cours de l&apos;année
+            Évolution des virements reçus avec analyse automatique des statuts
           </CardDescription>
         </CardHeader>
 
         <CardContent>
           <div className="space-y-4">
-            {rapport.trimestres.map((trimestre) => (
-              <div
-                key={trimestre.trimestre}
-                className="border rounded-lg p-4 hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-semibold text-slate-800 text-lg">
-                      {rapport.annee} - T{trimestre.trimestre}
-                    </h3>
-                    <p className="text-sm text-slate-600">
-                      {trimestre.dateDebut.toLocaleDateString("fr-FR", {
-                        month: "short",
-                      })}{" "}
-                      -{" "}
-                      {trimestre.dateFin.toLocaleDateString("fr-FR", {
-                        month: "short",
-                      })}
-                    </p>
+            {rapport.trimestres.map((trimestre) => {
+              const trimestreComplets = trimestre.donneesParLieu.reduce(
+                (sum, lieu) => sum + (lieu.virementsComplets || 0),
+                0
+              );
+              const trimestrePartiels = trimestre.donneesParLieu.reduce(
+                (sum, lieu) => sum + (lieu.virementsPartiels || 0),
+                0
+              );
+              const trimestreManquants = trimestre.donneesParLieu.reduce(
+                (sum, lieu) => sum + (lieu.virementsEnAttente || 0),
+                0
+              );
+              const alertTristre = trimestrePartiels + trimestreManquants;
+              return (
+                <div
+                  key={trimestre.trimestre}
+                  className="border rounded-lg p-4 hover:bg-slate-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-semibold text-slate-800 text-lg">
+                        {rapport.annee} - T{trimestre.trimestre}
+                      </h3>
+                      <p className="text-sm text-slate-600">
+                        {trimestre.dateDebut.toLocaleDateString("fr-FR", {
+                          month: "short",
+                        })}{" "}
+                        -{" "}
+                        {trimestre.dateFin.toLocaleDateString("fr-FR", {
+                          month: "short",
+                        })}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-600">
+                        {trimestre.totalVirements.toFixed(2)} €
+                      </div>
+                      <div className="flex gap-2 text-sm">
+                        <div className=" text-slate-600">
+                          {trimestre.nombreVirements} virement
+                          {trimestre.nombreVirements > 1 ? "s" : ""}
+                        </div>
+                        <div>-</div>
+                        <div className="text-slate-600">
+                          {trimestre.donneesParLieu.length} lieu
+                          {trimestre.donneesParLieu.length > 1 ? "x" : ""} actif
+                          {trimestre.donneesParLieu.length > 1 ? "s" : ""}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-green-600">
-                      {trimestre.totalVirements.toFixed(2)} €
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Complets :</span>
+                        <Badge
+                          variant="outline"
+                          className="bg-green-50 text-green-700"
+                        >
+                          {trimestreComplets}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Partiels :</span>
+                        <Badge
+                          variant="outline"
+                          className="bg-amber-50 text-amber-700"
+                        >
+                          {trimestrePartiels}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-600">
-                      {trimestre.nombreVirements} virement
-                      {trimestre.nombreVirements > 1 ? "s" : ""}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Moyenne/virement :</span>
-                      <span className="font-medium">
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">
+                          Moyenne/virement :
+                        </span>
+                        <span className="font-medium">
+                          {(
+                            trimestre.totalVirements / trimestre.nombreVirements
+                          ).toFixed(2)}{" "}
+                          €
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">En attente :</span>
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-50 text-blue-700"
+                        >
+                          {trimestreManquants}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded p-2">
+                      <div className="text-xs text-slate-600 mb-1">
+                        Part de l&apos;année
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2">
+                        <div
+                          className="h-2 rounded-full bg-green-500 transition-all duration-500"
+                          style={{
+                            width: `${
+                              (trimestre.totalVirements /
+                                rapport.totalVirements) *
+                              100
+                            }%`,
+                          }}
+                        />
+                      </div>
+                      <div className="text-xs text-slate-600 mt-1 text-right">
                         {(
-                          trimestre.totalVirements / trimestre.nombreVirements
-                        ).toFixed(2)}{" "}
-                        €
-                      </span>
+                          (trimestre.totalVirements / rapport.totalVirements) *
+                          100
+                        ).toFixed(1)}
+                        %
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Lieux actifs :</span>
-                      <span className="font-medium">
-                        {trimestre.donneesParLieu.length}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">En attente :</span>
-                      <span className="font-medium text-amber-600">
-                        {trimestre.virementsEnAttente}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-600">Partiels :</span>
-                      <span className="font-medium text-blue-600">
-                        {trimestre.virementsPartiels}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 rounded p-2">
-                    <div className="text-xs text-slate-600 mb-1">
-                      Part de l&apos;année
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="text-center">
                       <div
-                        className="h-2 rounded-full bg-green-500 transition-all duration-500"
-                        style={{
-                          width: `${
-                            (trimestre.totalVirements /
-                              rapport.totalVirements) *
-                            100
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <div className="text-xs text-slate-600 mt-1 text-right">
-                      {(
-                        (trimestre.totalVirements / rapport.totalVirements) *
-                        100
-                      ).toFixed(1)}
-                      %
+                        className={`text-sm font-semibold ${
+                          alertTristre === 0
+                            ? "text-green-600"
+                            : "text-amber-600"
+                        }`}
+                      >
+                        {alertTristre === 0 ? "✅ Optimal" : "⚠️ À surveiller"}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-1">
+                        {alertTristre} situation
+                        {alertTristre > 1 ? "s" : ""} particulière
+                        {alertTristre > 1 ? "s" : ""}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
 
-      {/* Lieux avec problèmes */}
-      {rapport.lieuxAvecProblemes.length > 0 && (
-        <Card className="bg-amber-50 border-amber-200">
-          <CardHeader>
-            <CardTitle className="text-amber-800 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Suivi des situations particulières
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              Cabinets avec des virements en attente ou partiels
-            </CardDescription>
-          </CardHeader>
+      {/* Section conseils améliorée avec listes détaillées */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-blue-800 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Analyse et Recommandations Détaillées
+          </CardTitle>
+          <CardDescription className="text-blue-700">
+            Conseils personnalisés basés sur votre situation réelle{" "}
+            {rapport.annee}
+          </CardDescription>
+        </CardHeader>
 
-          <CardContent>
-            <div className="space-y-4">
-              {rapport.lieuxAvecProblemes.map((lieu) => (
-                <div
-                  key={lieu.lieuId}
-                  className="border border-amber-200 rounded-lg p-4 bg-white"
-                >
-                  <div className="flex items-center justify-center gap-3 mb-3">
-                    <div
-                      className="w-4 h-4 rounded-full shrink-0"
-                      style={{ backgroundColor: lieu.couleurLieu }}
-                    />
-                    <h3 className="font-semibold text-slate-800">
-                      {lieu.nomLieu}
-                    </h3>
-                    <div className="flex gap-2">
-                      {lieu.virementsEnAttente > 0 && (
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {lieu.virementsEnAttente} en attente
-                        </Badge>
-                      )}
-                      {lieu.virementsPartiels > 0 && (
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          {lieu.virementsPartiels} partiels
-                        </Badge>
-                      )}
-                    </div>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Conseil taux de complétion */}
+            <div className="p-4 bg-white rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                📊 Taux de Complétion : {tauxCompletion.toFixed(1)}%
+              </h4>
+              <p className="text-sm text-slate-700 mb-3">
+                {tauxCompletion >= 95
+                  ? "Excellente couverture ! Votre trésorerie est saine et prévisible."
+                  : tauxCompletion >= 80
+                  ? "Bon taux global. Quelques retards à surveiller pour optimiser votre trésorerie."
+                  : "Taux faible. Recommandation : mettre en place un suivi actif des retards."}
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div className="text-center p-2 bg-green-50 rounded">
+                  <div className="font-bold text-green-700">
+                    {virementsComplets}
                   </div>
+                  <div className="text-green-600">Complets</div>
+                </div>
+                <div className="text-center p-2 bg-amber-50 rounded">
+                  <div className="font-bold text-amber-700">
+                    {virementsPartiels}
+                  </div>
+                  <div className="text-amber-600">Partiels</div>
+                </div>
+                <div className="text-center p-2 bg-blue-50 rounded">
+                  <div className="font-bold text-blue-700">
+                    {virementsEnAttente}
+                  </div>
+                  <div className="text-blue-600">En attente</div>
+                </div>
+                <div className="text-center p-2 bg-slate-100 rounded">
+                  <div className="font-bold text-slate-700">
+                    {virementsComplets + virementsPartiels + virementsEnAttente}
+                  </div>
+                  <div className="text-slate-600">Total</div>
+                </div>
+              </div>
+            </div>
 
-                  <div className="text-sm text-slate-600 space-y-1">
-                    <div className="flex justify-around">
-                      {lieu.dernierVirement && (
+            {/* Liste détaillée des virements partiels */}
+            {virementsPartiels > 0 && (
+              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  {virementsPartiels} Virement{virementsPartiels > 1 && "s"} Partiel{virementsPartiels > 1 && "s"} - Déficit :{" "}
+                  {deficitTotal.toFixed(2)} €
+                </h4>
+
+                <div className="space-y-3 mb-3">
+                  {rapport.trimestres.map((trimestre) =>
+                    trimestre.donneesParLieu
+                      .filter((lieu) => lieu.virementsPartiels > 0)
+                      .map((lieu) => (
+                        <div
+                          key={`${trimestre.trimestre}-${lieu.lieuId}`}
+                          className="flex items-center justify-between p-3 bg-white rounded border border-amber-200"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-3 h-3 rounded-full shrink-0"
+                              style={{ backgroundColor: lieu.couleurLieu }}
+                            />
+                            <div>
+                              <div className="font-medium text-slate-800">
+                                {lieu.nomLieu}
+                              </div>
+                              <div className="text-xs text-slate-600">
+                                T{trimestre.trimestre} -{" "}
+                                {lieu.virementsPartiels} virement{lieu.virementsPartiels > 1 && "s"} partiel{lieu.virementsPartiels > 1 && "s"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-amber-700">
+                              -{(lieu.totalVirementsManquants || 0).toFixed(2)}{" "}
+                              €
+                            </div>
+                            <div className="text-xs text-slate-600">
+                              manquant
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+
+                <div className="p-3 bg-amber-100 rounded border border-amber-300">
+                  <p className="text-sm text-amber-800 font-semibold mb-2">
+                    💡 Actions Recommandées :
+                  </p>
+                  <ul className="text-xs text-amber-700 space-y-1">
+                    <li>
+                      • Relance immédiate des cabinets avec déficit supérieur à
+                      500€
+                    </li>
+                    <li>
+                      • Vérification des justificatifs pour les écarts
+                      importants
+                    </li>
+                    <li>
+                      • Mise en place d&apos;un suivi hebdomadaire des
+                      régularisations
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Liste détaillée des virements en attente */}
+            {virementsEnAttente > 0 && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {virementsEnAttente} Virement(s) en Attente
+                </h4>
+
+                <div className="space-y-3 mb-3">
+                  {rapport.virementsAutomatiques.map((virement) => (
+                    <div
+                      key={virement.id}
+                      className="flex items-center justify-between p-3 bg-white rounded border border-blue-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: virement.lieu.couleur }}
+                        />
                         <div>
-                          Dernier virement :{" "}
-                          {lieu.dernierVirement.toLocaleDateString("fr-FR")}
+                          <div className="font-medium text-slate-800">
+                            {virement.lieu.nom}
+                          </div>
+                          <div className="text-xs text-slate-600">
+                            {virement.dateDebut.toLocaleDateString("fr-FR", {
+                              month: "long",
+                              year: "numeric",
+                            })}{" "}
+                            - {virement.montantTheorique.toFixed(2)}€ attendus
+                          </div>
                         </div>
-                      )}
-                      {lieu.virements && (
-                        <div className="border-2 rounded p-1 border-red-600">
-                          Déficit :{" "}
-                          <strong>
-                            {
-                              // somme des diférences des virements
-                              lieu.virements.reduce(
-                                (total, virement) =>
-                                  total + virement.difference,
-                                0
-                              )
-                            }
-                          </strong>
-                          €
+                      </div>
+                      <div className="text-right">
+                        <Badge
+                          className={
+                            virement.statut === "manquant"
+                              ? "bg-red-100 text-red-800 border-red-200"
+                              : virement.statut === "partiel"
+                              ? "bg-amber-100 text-amber-800 border-amber-200"
+                              : "bg-blue-100 text-blue-800 border-blue-200"
+                          }
+                        >
+                          {virement.statut === "manquant" && "⏰ En retard"}
+                          {virement.statut === "partiel" && "⚠️ Retard modéré"}
+                          {virement.statut === "attente" && "⏳ En attente"}
+                        </Badge>
+                        <div className="text-xs text-slate-600 mt-1">
+                          {virement.dateReception.toLocaleDateString("fr-FR")}
                         </div>
-                      )}
+                      </div>
                     </div>
-                    <div className="text-xs text-amber-700 text-center mt-2">
-                      💡 Recommandation : Relance du cabinet pour régularisation
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* NOUVELLE SECTION : Virements automatiques en attente */}
-      {rapport.virementsAutomatiques.length > 0 && (
-        <Card className="bg-amber-50 border-amber-200">
-          <CardHeader>
-            <CardTitle className="text-amber-800 flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Virements à recevoir (détection automatique)
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              {rapport.virementsAutomatiques.length} virement(s) détecté(s)
-              automatiquement basé sur vos honoraires théoriques
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-amber-600">
-                  {rapport.virementsAutomatiques.length}
-                </div>
-                <div className="text-sm text-amber-700">Virements attendus</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-amber-700">
-                  {totalAttenduAutomatique.toFixed(2)} €
-                </div>
-                <div className="text-sm text-amber-700">
-                  Montant total attendu
+                <div className="p-3 bg-blue-100 rounded border border-blue-300">
+                  <p className="text-sm text-blue-800 font-semibold mb-2">
+                    💡 Gestion des Virements Attendus :
+                  </p>
+                  <ul className="text-xs text-blue-700 space-y-1">
+                    <li>
+                      • Ces virements sont détectés automatiquement basé sur vos
+                      honoraires théoriques
+                    </li>
+                    <li>
+                      • Vérification recommandée sous 15 jours pour les statuts
+                      &quot;en attente&quot;
+                    </li>
+                    <li>
+                      • Relance immédiate pour les statuts &quot;en retard&quot;
+                    </li>
+                    <li>
+                      • Pensez à saisir les virements reçus dans l&apos;onglet
+                      &quot;Virements&quot;
+                    </li>
+                  </ul>
                 </div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {virementsEnRetard}
-                </div>
-                <div className="text-sm text-amber-700">
-                  Virements en retard
-                </div>
-              </div>
-            </div>
+            )}
 
-            <div className="space-y-3">
-              {rapport.virementsAutomatiques.map((virement) => (
-                <div
-                  key={virement.id}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-amber-200"
-                >
-                  <div className="flex items-center gap-3">
+            {/* Analyse comparative trimestre par trimestre */}
+            <div className="p-4 bg-slate-100 rounded-lg border border-slate-300">
+              <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                📈 Évolution Trimestrielle
+              </h4>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {rapport.trimestres.map((trimestre) => {
+                  const trimestrePartiels = trimestre.donneesParLieu.reduce(
+                    (sum, lieu) => sum + (lieu.virementsPartiels || 0),
+                    0
+                  );
+                  const trimestreManquants = trimestre.donneesParLieu.reduce(
+                    (sum, lieu) => sum + (lieu.virementsEnAttente || 0),
+                    0
+                  );
+                  const alertTristre = trimestrePartiels + trimestreManquants;
+
+                  return (
                     <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: virement.lieu.couleur }}
-                    />
-                    <div>
-                      <div className="font-medium text-slate-800">
-                        {virement.lieu.nom}
+                      key={trimestre.trimestre}
+                      className="text-center p-3 bg-white rounded border"
+                    >
+                      <div className="font-bold text-slate-800">
+                        T{trimestre.trimestre}
                       </div>
-                      <div className="text-sm text-slate-600">
-                        {virement.dateDebut.toLocaleDateString("fr-FR", {
-                          month: "long",
-                        })}{" "}
-                        -{virement.montantTheorique.toFixed(2)}€ attendus
+                      <div
+                        className={`text-sm font-semibold ${
+                          alertTristre === 0
+                            ? "text-green-600"
+                            : "text-amber-600"
+                        }`}
+                      >
+                        {alertTristre === 0
+                          ? "✅ Stable"
+                          : "⚠️ " +
+                            alertTristre +
+                            " alerte" +
+                            (alertTristre > 1 ? "s" : "")}
+                      </div>
+                      <div className="text-xs text-slate-600 mt-1">
+                        {trimestre.totalVirements.toFixed(0)}€
                       </div>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
 
-                  <Badge
-                    className={
-                      virement.statut === "manquant"
-                        ? "bg-red-100 text-red-800"
-                        : virement.statut === "partiel"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-blue-100 text-blue-800"
-                    }
-                  >
-                    {virement.statut === "manquant"
-                      ? "En retard"
-                      : virement.statut === "partiel"
-                      ? "Retard modéré"
-                      : "En attente"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 p-3 bg-amber-100 rounded-lg">
-              <div className="text-sm text-amber-800">
-                💡 <strong>Fonctionnalité automatique :</strong> Ces virements
-                sont détectés automatiquement à partir de vos honoraires
-                théoriques. Ils n&apos;ont pas besoin d&apos;être saisis
-                manuellement.
+              <div className="mt-3 p-2 bg-slate-200 rounded">
+                <p className="text-xs text-slate-700 text-center">
+                  {rapport.trimestres.every(
+                    (t) =>
+                      t.donneesParLieu.reduce(
+                        (sum, lieu) => sum + (lieu.virementsPartiels || 0),
+                        0
+                      ) === 0
+                  )
+                    ? "✅ Excellente stabilité sur tous les trimestres"
+                    : "📊 Suivi trimestriel recommandé pour anticiper les tendances"}
+                </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Bilan annuel */}
+            {/* Conseil performance annuelle */}
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                💰 Synthèse de Performance
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <div className="text-slate-600">Trésorerie moyenne</div>
+                  <div className="font-bold text-green-700">
+                    {moyenneMensuelle.toFixed(2)} €/mois
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-600">Total annuel</div>
+                  <div className="font-bold text-green-700">
+                    {totalVirementsReels.toFixed(2)} €
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-600">Taux de complétion</div>
+                  <div className="font-bold text-green-700">
+                    {tauxCompletion.toFixed(1)}%
+                  </div>
+                </div>
+              </div>
+              {deficitTotal > 0 && (
+                <div className="mt-3 p-2 bg-amber-100 rounded border border-amber-300">
+                  <p className="text-xs text-amber-800 text-center">
+                    <strong>Point d&apos;attention :</strong> Un déficit de{" "}
+                    {deficitTotal.toFixed(2)}€ est à régulariser
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Bilan annuel amélioré */}
       <Card
         className={
           tauxCompletion >= 95
@@ -450,33 +651,39 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
         <CardContent className="p-6">
           <div className="text-center">
             <h3
-              className={`" text-lg font-semibold " ${
+              className={`text-lg font-semibold ${
                 tauxCompletion >= 95
                   ? "text-green-800"
                   : tauxCompletion >= 80
                   ? "text-amber-800"
                   : "text-red-800"
-              } `}
+              }`}
             >
               Bilan de l&apos;année {rapport.annee}
             </h3>
             <p
-              className={`" mt-4 " ${
+              className={`mt-4 ${
                 tauxCompletion >= 95
                   ? "text-green-700"
                   : tauxCompletion >= 80
                   ? "text-amber-700"
                   : "text-red-700"
-              } `}
+              }`}
             >
               {tauxCompletion >= 95
-                ? "✅ Excellente année ! La quasi-totalité des virements ont été reçus sans problème."
+                ? "✅ Excellente année ! Votre trésorerie est saine avec une couverture optimale des honoraires."
                 : tauxCompletion >= 80
-                ? "⚠️ Bonne année globalement, mais certaines situations nécessitent un suivi."
-                : "❌ Année difficile : nombreux virements en attente ou partiels nécessitant une action."}
+                ? "⚠️ Bonne année globalement. Quelques points de vigilance à surveiller pour améliorer votre trésorerie."
+                : "❌ Année difficile nécessitant une attention particulière sur le suivi des paiements."}
             </p>
             <div className="mt-3 text-sm text-slate-600">
-              Généré le {new Date().toLocaleDateString("fr-FR")}
+              Rapport généré le{" "}
+              {new Date().toLocaleDateString("fr-FR", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
             </div>
           </div>
         </CardContent>

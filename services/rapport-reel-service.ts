@@ -22,8 +22,13 @@ export interface DonneesVirementLieu {
   nomLieu: string;
   couleurLieu: string;
   totalVirements: number;
+  totalVirementsTheoriques: number;
   nombreVirements: number;
   statutMoyen: "recu" | "attente" | "partiel" | "manquant";
+  virementsComplets: number;
+  virementsPartiels: number;
+  virementsEnAttente: number;
+  totalVirementsManquants: number;
 }
 
 export interface RapportReelAnnuel {
@@ -99,6 +104,29 @@ export class RapportReelService {
           0
         );
 
+        const totalVirementsTheoriques = virementsLieu.reduce(
+          (sum, v) => sum + (v.montantTheorique || 0),
+          0
+        );
+
+        const virementsComplets = virementsLieu.filter(
+          (v) => v.difference >= 0
+        ).length;
+
+        const virementsPartiels = virementsLieu.filter(
+          (v) => v.difference < 0 && v.montantTheorique + v.difference > 0
+        ).length;
+
+        const virementsEnAttente = virementsLieu.filter(
+          (v) => v.difference < 0 && v.montantTheorique + v.difference <= 0
+        ).length;
+
+        console.log(virementsEnAttente);
+
+        const totalVirementsManquants = virementsLieu
+          .filter((v) => v.difference < 0)
+          .reduce((sum, v) => sum + Math.abs(v.difference), 0);
+
         // Déterminer le statut moyen
         let statutMoyen: DonneesVirementLieu["statutMoyen"] = "recu";
         if (virementsLieu.some((v) => v.statut === "attente"))
@@ -113,8 +141,13 @@ export class RapportReelService {
           nomLieu: lieu.nom,
           couleurLieu: lieu.couleur,
           totalVirements: totalVirementsLieu,
+          totalVirementsTheoriques,
           nombreVirements: virementsLieu.length,
           statutMoyen,
+          virementsComplets,
+          virementsPartiels,
+          virementsEnAttente,
+          totalVirementsManquants,
         };
       })
       .filter((donnees) => donnees.nombreVirements > 0);
@@ -156,7 +189,7 @@ export class RapportReelService {
       lieux,
       annee
     );
-    
+
     // Fusionner les virements réels et automatiques
     const tousLesVirements = [...virements, ...virementsAutomatiques];
 

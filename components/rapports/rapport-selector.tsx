@@ -15,21 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Calendar, BarChart3 } from "lucide-react";
+import { FileText, Calendar, BarChart3, TrendingUp } from "lucide-react";
 
 interface RapportSelectorProps {
   anneesDisponibles: number[];
   onRapportSelect: (annee: number, trimestre?: number) => void;
-  rapportType: "theorique" | "reel" | "comparatif"; // Nouvelle prop
 }
 
 export function RapportSelector({
   anneesDisponibles,
   onRapportSelect,
-  rapportType,
 }: RapportSelectorProps) {
   const [selectedAnnee, setSelectedAnnee] = useState<number>(
-    anneesDisponibles[0]
+    anneesDisponibles[0] || new Date().getFullYear()
   );
   const [selectedType, setSelectedType] = useState<"annuel" | "trimestriel">(
     "annuel"
@@ -43,19 +41,6 @@ export function RapportSelector({
     { numero: 4, nom: "T4 - Octobre à Décembre" },
   ];
 
-  const getTypeLabel = () => {
-    switch (rapportType) {
-      case "theorique":
-        return "théorique";
-      case "reel":
-        return "réel";
-      case "comparatif":
-        return "comparatif";
-      default:
-        return "";
-    }
-  };
-
   const handleGenererRapport = () => {
     if (selectedType === "annuel") {
       onRapportSelect(selectedAnnee);
@@ -68,16 +53,11 @@ export function RapportSelector({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Génération de rapports {getTypeLabel()}
+          <TrendingUp className="h-5 w-5" />
+          Génération de Rapports
         </CardTitle>
         <CardDescription>
-          {rapportType === "theorique" &&
-            "Basé sur vos déclarations quotidiennes (honoraires calculés)"}
-          {rapportType === "reel" &&
-            "Basé sur vos virements effectivement reçus"}
-          {rapportType === "comparatif" &&
-            "Compare les honoraires théoriques avec les virements réels"}
+          Analyse détaillée basée sur vos virements reçus ou en attente
         </CardDescription>
       </CardHeader>
 
@@ -166,17 +146,8 @@ export function RapportSelector({
         <div className="flex justify-center">
           <Button onClick={handleGenererRapport} className="flex-1 md:w-1/2">
             <FileText className="h-4 w-4 mx-2" />
-            Générer le rapport {getTypeLabel()}
+            Générer le rapport réel
           </Button>
-        </div>
-        {/* Information sur le type d'export */}
-        <div className="text-xs text-slate-500 p-3 bg-slate-50 rounded-lg">
-          <strong>Type de rapport :</strong> {getTypeLabel().toUpperCase()}
-          {rapportType === "theorique" &&
-            " - Honoraires calculés sur les saisies quotidiennes"}
-          {rapportType === "reel" && " - Virements effectivement reçus"}
-          {rapportType === "comparatif" &&
-            " - Comparaison théorie/réalité avec analyse des écarts"}
         </div>
       </CardContent>
     </Card>
