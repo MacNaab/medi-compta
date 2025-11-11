@@ -53,7 +53,6 @@ export function SaisieForm({
 }: SaisieFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLieu, setSelectedLieu] = useState<Lieu | null>(null);
-  const [recettes, setRecettes] = useState("");
 
   const {
     register,
@@ -61,18 +60,23 @@ export function SaisieForm({
     formState: { errors },
     setValue,
     watch,
-    reset,
     control,
   } = useForm<FormData>({
     resolver: zodResolver(saisieSchema),
     defaultValues: journeeExistante
-      ? { ...journeeExistante }
+      ? journeeExistante
       : {
           date: datePredefinie || new Date(),
         },
   });
 
   const recettesTotales = watch("recettesTotales");
+
+  useEffect(() => {
+    if (journeeExistante) {
+      setSelectedLieu(journeeExistante.lieu as Lieu);
+    }
+  }, [journeeExistante]);
 
   // Format de la date pour l'input HTML
   const formatDateForInput = (date: Date): string => {
@@ -100,44 +104,17 @@ export function SaisieForm({
     setValue("date", newDate);
   };
 
-  useEffect(() => {
-    if (journeeExistante) {
-      // MODE ÉDITION : Pré-remplir avec les données existantes
-      const lieu = lieux.find((l) => l.id === journeeExistante.lieuId);
-      setSelectedLieu(lieu || null);
-      setRecettes(journeeExistante.recettesTotales.toString());
-
-      reset({
-        date: new Date(journeeExistante.date),
-        lieuId: journeeExistante.lieuId,
-        recettesTotales: journeeExistante.recettesTotales,
-        notes: journeeExistante.notes || "",
-      });
-    } else {
-      // MODE CRÉATION : Valeurs par défaut
-      setRecettes("");
-      setSelectedLieu(null);
-
-      reset({
-        date: datePredefinie || new Date(),
-        lieuId: "",
-        recettesTotales: 0,
-        notes: "",
-      });
-    }
-  }, [journeeExistante, lieux, datePredefinie, reset]);
+  const handleLieuChange = (lieuId: string) => {
+    const selectedLieu = lieux.find((lieu) => lieu.id === lieuId);
+    setSelectedLieu(selectedLieu || null);
+    setValue("lieuId", lieuId);
+  };
 
   // Calcul automatique des honoraires théoriques
   const honorairesTheoriques =
     selectedLieu && recettesTotales
       ? (recettesTotales * selectedLieu.pourcentageRetrocession) / 100
       : 0;
-
-  const handleRecettesChange = (value: string) => {
-    setRecettes(value);
-    const numericValue = parseFloat(value) || 0;
-    setValue("recettesTotales", numericValue);
-  };
 
   const handleFormSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -188,7 +165,7 @@ export function SaisieForm({
               control={control}
               render={({ field }) => (
                 <Select
-                  onValueChange={field.onChange}
+                  onValueChange={handleLieuChange}
                   defaultValue={field.value}
                 >
                   <SelectTrigger
@@ -231,8 +208,7 @@ export function SaisieForm({
               step="0.01"
               min="0"
               placeholder="0,00"
-              value={recettes}
-              onChange={(e) => handleRecettesChange(e.target.value)}
+              {...register("recettesTotales", { valueAsNumber: true })}
               className={errors.recettesTotales ? "border-red-500" : ""}
             />
             {errors.recettesTotales && (

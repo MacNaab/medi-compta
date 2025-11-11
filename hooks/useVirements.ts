@@ -35,8 +35,8 @@ export function useVirements(journees: JourneeAvecLieu[]) {
       const journeesPeriode = journees.filter((j) => {
         const dateJournee = new Date(j.date);
         return (
-          dateJournee >= virement.dateDebut &&
-          dateJournee <= virement.dateFin &&
+          dateJournee.getDate() >= virement.dateDebut.getDate() &&
+          dateJournee.getDate() <= virement.dateFin.getDate() &&
           j.lieuId === virement.lieuId
         );
       });

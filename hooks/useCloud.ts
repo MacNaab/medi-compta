@@ -216,13 +216,16 @@ export function useCloud() {
     database: "journees" | "lieux" | "virements",
     data: Journee | Lieu | Virement
   ) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return;
+    }
     const { error } = await supabase.from(database).insert(data);
     if (error) {
-      // new row violates row-level security policy for table "lieux"
-      if (!error.message.includes("row-level security policy")) {
-        toast.error(error.message);
-      }
-    }else{
+      toast.error(error.message);
+    } else {
       toast.info("Donnée enregistrée dans le cloud");
     }
   };
@@ -231,13 +234,19 @@ export function useCloud() {
     database: "journees" | "lieux" | "virements",
     data: Journee | Lieu | Virement
   ) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return;
+    }
     const { error } = await supabase
       .from(database)
       .update(data)
       .eq("id", data.id);
     if (error) {
       toast.error(error.message);
-    }else{
+    } else {
       toast.info("Donnée mise à jour dans le cloud");
     }
   };
@@ -246,10 +255,16 @@ export function useCloud() {
     database: "journees" | "lieux" | "virements",
     id: string
   ) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return;
+    }
     const { error } = await supabase.from(database).delete().eq("id", id);
     if (error) {
       toast.error(error.message);
-    }else{
+    } else {
       toast.info("Donnée supprimée dans le cloud");
     }
   };

@@ -63,7 +63,6 @@ export function VirementForm({
     formState: { errors },
     setValue,
     watch,
-    reset,
     control,
   } = useForm<FormData>({
     resolver: zodResolver(virementSchema),
@@ -80,37 +79,14 @@ export function VirementForm({
   const montantRecu = watch("montantRecu");
   const lieuId = watch("lieuId");
 
-  // Pré-remplir le formulaire en mode édition
-  useEffect(() => {
-    if (virementExistant) {
-      // MODE ÉDITION : Pré-remplir avec les données existantes
-      reset({
-        lieuId: virementExistant.lieuId,
-        dateDebut: new Date(virementExistant.dateDebut),
-        dateFin: new Date(virementExistant.dateFin),
-        montantRecu: virementExistant.montantRecu,
-        dateReception: new Date(virementExistant.dateReception),
-        statut: virementExistant.statut,
-        notes: virementExistant.notes || "",
-      });
-    } else {
-      // MODE CRÉATION : Valeurs par défaut
-      reset({
-        statut: "recu",
-        dateReception: new Date(),
-        // Les autres champs restent vides
-      });
-    }
-  }, [virementExistant, lieux, reset]);
-
   // Calculer le montant théorique quand les dates ou le lieu changent
   useEffect(() => {
     if (lieuId && dateDebut && dateFin) {
       const journeesPeriode = journees.filter((j) => {
         const dateJournee = new Date(j.date);
         return (
-          dateJournee >= dateDebut &&
-          dateJournee <= dateFin &&
+          dateJournee.getDate() >= dateDebut.getDate() &&
+          dateJournee.getDate() <= dateFin.getDate() &&
           j.lieuId === lieuId
         );
       });

@@ -60,7 +60,11 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
     rapport.virementsAutomatiques.reduce(
       (sum, v) => sum + v.montantTheorique,
       0
-    ) + totalVirementsReels;
+    ) +
+    rapport.trimestres
+      .flatMap((t) => t.donneesParLieu)
+      .flatMap((l) => l.totalVirementsTheoriques || 0)
+      .reduce((sum, count) => sum + count, 0);
 
   const tauxCompletion =
     totalAttenduTheorique > 0
@@ -394,7 +398,8 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
               <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  {virementsPartiels} Virement{virementsPartiels > 1 && "s"} Partiel{virementsPartiels > 1 && "s"} - Déficit :{" "}
+                  {virementsPartiels} Virement{virementsPartiels > 1 && "s"}{" "}
+                  Partiel{virementsPartiels > 1 && "s"} - Déficit :{" "}
                   {deficitTotal.toFixed(2)} €
                 </h4>
 
@@ -418,7 +423,9 @@ export function RapportReelAnnuelView({ rapport }: RapportReelAnnuelProps) {
                               </div>
                               <div className="text-xs text-slate-600">
                                 T{trimestre.trimestre} -{" "}
-                                {lieu.virementsPartiels} virement{lieu.virementsPartiels > 1 && "s"} partiel{lieu.virementsPartiels > 1 && "s"}
+                                {lieu.virementsPartiels} virement
+                                {lieu.virementsPartiels > 1 && "s"} partiel
+                                {lieu.virementsPartiels > 1 && "s"}
                               </div>
                             </div>
                           </div>

@@ -121,8 +121,6 @@ export class RapportReelService {
           (v) => v.difference < 0 && v.montantTheorique + v.difference <= 0
         ).length;
 
-        console.log(virementsEnAttente);
-
         const totalVirementsManquants = virementsLieu
           .filter((v) => v.difference < 0)
           .reduce((sum, v) => sum + Math.abs(v.difference), 0);
