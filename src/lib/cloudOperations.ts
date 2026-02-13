@@ -108,6 +108,7 @@ export const cloudSaveJournee = async (journee: Journee): Promise<boolean> => {
       lieu_id: journee.lieuId || null,
       recettes: journee.recettesTotales || 0,
       honoraires_theoriques: journee.honorairesTheoriques || null,
+      prime: journee.prime || 0,
       notes: journee.notes || null,
       created_at: journee.createdAt,
       updated_at: journee.updatedAt || journee.createdAt,
@@ -131,6 +132,7 @@ export const cloudUpdateJournee = async (journee: Journee): Promise<boolean> => 
       lieu_id: journee.lieuId || null,
       recettes: journee.recettesTotales || 0,
       honoraires_theoriques: journee.honorairesTheoriques || null,
+      prime: journee.prime || 0,
       notes: journee.notes || null,
       updated_at: journee.updatedAt || new Date().toISOString(),
     }).eq('id', journee.id).eq('user_id', userId);

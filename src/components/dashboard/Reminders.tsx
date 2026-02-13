@@ -22,6 +22,7 @@ import { useNotifications, getSystemReminders } from '@/hooks/use-notifications'
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { NumberInput } from '../ui/number-input';
 
 type ReminderStatus = 'upcoming' | 'urgent' | 'completed';
 
@@ -352,13 +353,12 @@ export function Reminders() {
                   {newReminder.notificationsEnabled && (
                     <div className="space-y-2">
                       <Label htmlFor="notifyDays">Jours avant l'échéance</Label>
-                      <Input
+                      <NumberInput
                         id="notifyDays"
-                        type="number"
-                        min="1"
-                        max="30"
+                        min={1}
+                        max={30}
                         value={newReminder.notifyDaysBefore}
-                        onChange={(e) => setNewReminder({ ...newReminder, notifyDaysBefore: parseInt(e.target.value) || 7 })}
+                        onValueChange={(e) => setNewReminder({ ...newReminder, notifyDaysBefore: e || 7 })}
                       />
                     </div>
                   )}
@@ -553,13 +553,12 @@ export function Reminders() {
               {editingReminder.notificationsEnabled && (
                 <div className="space-y-2">
                   <Label htmlFor="edit-notifyDays">Jours avant l'échéance</Label>
-                  <Input
+                  <NumberInput
                     id="edit-notifyDays"
-                    type="number"
-                    min="1"
-                    max="30"
+                    min={1}
+                    max={30}
                     value={editingReminder.notifyDaysBefore}
-                    onChange={(e) => setEditingReminder({ ...editingReminder, notifyDaysBefore: parseInt(e.target.value) || 7 })}
+                    onValueChange={(e) => setEditingReminder({ ...editingReminder, notifyDaysBefore: e || 7 })}
                   />
                 </div>
               )}

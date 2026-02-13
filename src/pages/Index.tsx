@@ -6,7 +6,6 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { PendingPayments } from '@/components/dashboard/PendingPayments';
 import { Reminders } from '@/components/dashboard/Reminders';
 import { getStatistics, getJournees, getLieux, getVirements } from '@/lib/storage';
-import { parseISO, isWithinInterval } from 'date-fns';
 
 const Index = () => {
   const [stats, setStats] = useState(getStatistics());
@@ -31,36 +30,27 @@ const Index = () => {
   });
   const revenueThisMonth = journeesThisMonth.reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
 
-  // Calculate partial payments missing
+  // Calculate cabinet balances (aggregated)
   const totalPartialMissing = useMemo(() => {
     let total = 0;
     
-    virements.filter(v => v.statut === 'recu').forEach(v => {
-      if (!v.lieuId || !v.dateDebut || !v.dateFin) return;
+    lieux.forEach(lieu => {
+      const totalAttendu = journees
+        .filter(j => j.lieuId === lieu.id)
+        .reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
+
+      const totalRecu = virements
+        .filter(v => v.statut === 'recu' && v.lieuId === lieu.id)
+        .reduce((sum, v) => sum + (v.montantRecu || 0), 0);
       
-      const lieu = lieux.find(l => l.id === v.lieuId);
-      if (!lieu) return;
-      
-      const start = parseISO(v.dateDebut);
-      const end = parseISO(v.dateFin);
-      
-      const journeesInPeriod = journees.filter(j => {
-        if (j.lieuId !== v.lieuId) return false;
-        const journeeDate = parseISO(j.date);
-        return isWithinInterval(journeeDate, { start, end });
-      });
-      
-      const montantAttendu = journeesInPeriod.reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
-      const montantRecu = v.montantRecu || 0;
-      const montantManquant = montantAttendu - montantRecu;
-      
-      if (montantManquant > 0) {
-        total += montantManquant;
-      }
+      const solde = totalRecu - totalAttendu;
+      if (solde < 0) {
+        total += Math.abs(solde);
+        }
     });
     
     return total;
-  }, [virements, journees, lieux]);
+  }, [journees, virements, lieux]);
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -86,7 +76,7 @@ const Index = () => {
         <StatCard
           title="Partiels manquants"
           value={`${totalPartialMissing.toLocaleString('fr-FR')} €`}
-          subtitle="Sommes encore dues"
+          subtitle="Solde cabinets négatif"
           icon={AlertTriangle}
           variant={totalPartialMissing > 0 ? 'warning' : 'default'}
         />

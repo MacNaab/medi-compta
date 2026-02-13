@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { NumberInput } from '../ui/number-input';
 
 const MICRO_BNC_LIMIT = 77700;
 
@@ -269,19 +270,17 @@ export function RegimeComparison({ onClose }: RegimeComparisonProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label>Votre CA annuel (€)</Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={currentCA}
-                  onChange={(e) => setCurrentCA(parseFloat(e.target.value) || 0)}
+                  onValueChange={(e) => setCurrentCA(parseFloat(e.toString()) || 0)}
                   placeholder="50000"
                 />
               </div>
               <div className="space-y-2">
                 <Label>Charges annuelles (€)</Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={chargesAnnuelles}
-                  onChange={(e) => setChargesAnnuelles(parseFloat(e.target.value) || 0)}
+                  onValueChange={(e) => setChargesAnnuelles(parseFloat(e.toString()) || 0)}
                   placeholder="5000"
                 />
               </div>

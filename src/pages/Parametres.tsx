@@ -466,7 +466,7 @@ export default function Parametres() {
                   )}
 
                   {!importWarnings && (
-                    <Input type="file" accept=".json" onChange={handleImport} />
+                    <Input className="cursor-pointer" type="file" accept=".json" onChange={handleImport} />
                   )}
                 </div>
               </DialogContent>

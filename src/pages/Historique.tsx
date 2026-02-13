@@ -37,6 +37,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { NumberInput } from '@/components/ui/number-input';
 
 export default function Historique() {
   const [journees, setJournees] = useState<Journee[]>([]);
@@ -552,10 +553,9 @@ export default function Historique() {
 
             <div className="space-y-2">
               <Label>Recettes totales (€)</Label>
-              <Input
-                type="number"
-                value={editForm.recettesTotales}
-                onChange={(e) => setEditForm(prev => ({ ...prev, recettesTotales: e.target.value }))}
+              <NumberInput
+                value={Number(editForm.recettesTotales)}
+                onValueChange={(e) => setEditForm(prev => ({ ...prev, recettesTotales: e.toString() }))}
                 placeholder="0"
               />
               {editForm.lieuId && editForm.recettesTotales && (

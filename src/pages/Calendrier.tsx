@@ -42,6 +42,7 @@ import {
   isToday,
 } from "date-fns";
 import { fr } from "date-fns/locale";
+import { NumberInput } from "@/components/ui/number-input";
 
 // Parse date string as local date (no timezone conversion)
 const parseLocalDate = (dateStr: string): Date => {
@@ -102,6 +103,7 @@ export default function Calendrier() {
   const [formData, setFormData] = useState({
     lieuId: "",
     recettesTotales: "",
+    prime: "",
     notes: "",
   });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -132,6 +134,7 @@ export default function Calendrier() {
     setFormData({
       lieuId: lieux[0]?.id || "",
       recettesTotales: "",
+      prime: "",
       notes: "",
     });
     setIsDialogOpen(true);
@@ -140,6 +143,14 @@ export default function Calendrier() {
   const handleAddNew = () => {
     if (!selectedDate) return;
 
+    const primeAmount = formData.prime ? Number(formData.prime) : 0;
+    const retrocessionAmount =
+      formData.recettesTotales && formData.lieuId
+        ? (Number(formData.recettesTotales) *
+            (getLieuById(formData.lieuId)?.pourcentageRetrocession || 80)) /
+          100
+        : undefined;
+
     const data = {
       lieuId: formData.lieuId || undefined,
       date: formatLocalDate(selectedDate),
@@ -147,11 +158,10 @@ export default function Calendrier() {
         ? Number(formData.recettesTotales)
         : undefined,
       honorairesTheoriques:
-        formData.recettesTotales && formData.lieuId
-          ? (Number(formData.recettesTotales) *
-              (getLieuById(formData.lieuId)?.pourcentageRetrocession || 80)) /
-            100
+        retrocessionAmount !== undefined
+          ? retrocessionAmount + primeAmount
           : undefined,
+      prime: primeAmount || undefined,
       notes: formData.notes || undefined,
     };
 
@@ -168,6 +178,7 @@ export default function Calendrier() {
     setFormData({
       lieuId: lieux[0]?.id || "",
       recettesTotales: "",
+      prime: "",
       notes: "",
     });
     setEditingIndex(null);
@@ -179,6 +190,7 @@ export default function Calendrier() {
     setFormData({
       lieuId: journee.lieuId || "",
       recettesTotales: journee.recettesTotales?.toString() || "",
+      prime: journee.prime?.toString() || "",
       notes: journee.notes || "",
     });
   };
@@ -187,6 +199,14 @@ export default function Calendrier() {
     if (editingIndex === null || !selectedDate) return;
 
     const journee = dayJournees[editingIndex];
+    const primeAmount = formData.prime ? Number(formData.prime) : 0;
+    const retrocessionAmount =
+      formData.recettesTotales && formData.lieuId
+        ? (Number(formData.recettesTotales) *
+            (getLieuById(formData.lieuId)?.pourcentageRetrocession || 80)) /
+          100
+        : undefined;
+
     const data = {
       lieuId: formData.lieuId || undefined,
       date: formatLocalDate(selectedDate),
@@ -194,11 +214,10 @@ export default function Calendrier() {
         ? Number(formData.recettesTotales)
         : undefined,
       honorairesTheoriques:
-        formData.recettesTotales && formData.lieuId
-          ? (Number(formData.recettesTotales) *
-              (getLieuById(formData.lieuId)?.pourcentageRetrocession || 80)) /
-            100
+        retrocessionAmount !== undefined
+          ? retrocessionAmount + primeAmount
           : undefined,
+      prime: primeAmount || undefined,
       notes: formData.notes || undefined,
     };
 
@@ -215,6 +234,7 @@ export default function Calendrier() {
     setFormData({
       lieuId: lieux[0]?.id || "",
       recettesTotales: "",
+      prime: "",
       notes: "",
     });
   };
@@ -240,6 +260,7 @@ export default function Calendrier() {
     setFormData({
       lieuId: lieux[0]?.id || "",
       recettesTotales: "",
+      prime: "",
       notes: "",
     });
   };
@@ -356,17 +377,28 @@ export default function Calendrier() {
                               lieu?.couleur || "hsl(var(--muted-foreground))",
                           }}
                         />
-                        <span className="truncate font-medium">
+                        <div className="truncate font-medium">
                           {lieu?.nom || "Sans cabinet"}
-                        </span>
+                        </div>
                         {journee.recettesTotales !== undefined && (
-                          <span className="ml-auto text-[10px] opacity-80 shrink-0 whitespace-nowrap">
-                            {journee.recettesTotales.toLocaleString("fr-FR")}€ →{" "}
-                            {(journee.honorairesTheoriques || 0).toLocaleString(
-                              "fr-FR",
-                            )}
-                            €
-                          </span>
+                          <div className="ml-auto text-[10px] opacity-80 shrink-0 whitespace-nowrap flex items-center">
+                            <div className="flex flex-col">
+                              <div>
+                                {journee.recettesTotales.toLocaleString(
+                                  "fr-FR",
+                                )}
+                                €
+                              </div>
+                              {journee.prime && <div>+ {journee.prime}€</div>}
+                            </div>
+                            <div>
+                              →{" "}
+                              {(
+                                journee.honorairesTheoriques || 0
+                              ).toLocaleString("fr-FR")}
+                              €
+                            </div>
+                          </div>
                         )}
                       </div>
                     );
@@ -465,6 +497,9 @@ export default function Calendrier() {
                           "fr-FR",
                         )}{" "}
                         €
+                        {journee.prime
+                          ? ` (dont ${journee.prime.toLocaleString("fr-FR")} € de prime)`
+                          : ""}
                       </p>
                     )}
                     {journee.notes && (
@@ -520,27 +555,69 @@ export default function Calendrier() {
 
             <div className="space-y-2">
               <Label htmlFor="recettes">Recettes totales (€)</Label>
-              <Input
+              <NumberInput
                 id="recettes"
-                type="number"
                 step="0.01"
-                value={formData.recettesTotales}
-                onChange={(e) =>
-                  setFormData({ ...formData, recettesTotales: e.target.value })
+                value={Number(formData.recettesTotales)}
+                onValueChange={(e) =>
+                  setFormData({ ...formData, recettesTotales: e.toString() })
                 }
                 placeholder="Ex: 850.00"
               />
-              {formData.recettesTotales && formData.lieuId && (
-                <p className="text-sm text-muted-foreground">
-                  Honoraires:{" "}
-                  {(
-                    (Number(formData.recettesTotales) *
-                      (getLieuById(formData.lieuId)?.pourcentageRetrocession ||
-                        80)) /
-                    100
-                  ).toLocaleString("fr-FR")}{" "}
-                  € ({getLieuById(formData.lieuId)?.pourcentageRetrocession}%)
+              <div className="space-y-2">
+                <Label htmlFor="prime">Bonus (€)</Label>
+                <NumberInput
+                  id="prime"
+                  step="0.01"
+                  value={Number(formData.prime)}
+                  onValueChange={(e) =>
+                    setFormData({ ...formData, prime: e.toString() })
+                  }
+                  placeholder="Ex: 50.00"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Somme ajoutée aux honoraires sans rétrocession
                 </p>
+              </div>
+              {formData.recettesTotales && formData.lieuId && (
+                <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Rétrocession (
+                      {getLieuById(formData.lieuId)?.pourcentageRetrocession}%)
+                    </span>
+                    <span>
+                      {(
+                        (Number(formData.recettesTotales) *
+                          (getLieuById(formData.lieuId)
+                            ?.pourcentageRetrocession || 80)) /
+                        100
+                      ).toLocaleString("fr-FR")}{" "}
+                      €
+                    </span>
+                  </div>
+                  {formData.prime && Number(formData.prime) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bonus</span>
+                      <span>
+                        + {Number(formData.prime).toLocaleString("fr-FR")} €
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold border-t border-border pt-1">
+                    <span>Total honoraires</span>
+                    <span className="text-primary">
+                      {(
+                        (Number(formData.recettesTotales) *
+                          (getLieuById(formData.lieuId)
+                            ?.pourcentageRetrocession || 80)) /
+                          100 +
+                        (Number(formData.prime) || 0)
+                      ).toLocaleString("fr-FR")}{" "}
+                      €
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 

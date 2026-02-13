@@ -39,6 +39,7 @@ export interface Journee {
   date: string;
   recettesTotales?: number;
   honorairesTheoriques?: number;
+  prime?: number;
   notes?: string;
   createdAt: string;
   updatedAt?: string;

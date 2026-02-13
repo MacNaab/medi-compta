@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect, useMemo } from "react";
 import {
   Plus,
@@ -53,7 +52,7 @@ import {
 } from "@/lib/storage";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth, getYear } from "date-fns";
+import { format, parseISO, isWithinInterval } from "date-fns";
 import { fr } from "date-fns/locale";
 
 interface YearMonthSelection {
@@ -70,16 +69,13 @@ interface PendingPayment {
   journees: Journee[];
 }
 
-interface PartialPayment {
+interface CabinetBalance {
   lieuId: string;
   lieuNom: string;
   lieuCouleur: string;
-  month: string;
-  monthLabel: string;
-  montantAttendu: number;
-  montantRecu: number;
-  montantManquant: number;
-  virementId: string;
+  totalAttendu: number;
+  totalRecu: number;
+  solde: number; // recu - attendu (negatif = manquant)
 }
 
 export default function Paiements() {
@@ -134,66 +130,58 @@ export default function Paiements() {
 
   const montantAttendu = useMemo(() => {
     return calculateMontantAttendu(formData.lieuId, formData.dateDebut, formData.dateFin);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.lieuId, formData.dateDebut, formData.dateFin, journees, lieux]);
 
-  // Calcul automatique des paiements en attente par médecin et période (mensuel)
+  // Calcul automatique des paiements en attente par journée non couverte
   const pendingPayments = useMemo((): PendingPayment[] => {
     const payments: PendingPayment[] = [];
 
-    // Grouper les journées par lieu et par mois
-    const groupedJournees: Record<string, Record<string, Journee[]>> = {};
+    // Pour chaque journée, vérifier si elle est couverte par un virement reçu
+    const uncoveredByLieuMonth: Record<string, Record<string, Journee[]>> = {};
 
     journees.forEach((j) => {
       if (!j.lieuId || !j.date) return;
+      if ((j.honorairesTheoriques || 0) <= 0) return;
 
-      const monthKey = j.date.substring(0, 7); // 'YYYY-MM'
+      const journeeDate = j.date; // format YYYY-MM-DD
 
-      if (!groupedJournees[j.lieuId]) {
-        groupedJournees[j.lieuId] = {};
+      // Vérifier si cette journée est couverte par au moins un virement reçu
+      const isCovered = virements.some((v) => {
+        if (v.statut !== "recu" || v.lieuId !== j.lieuId) return false;
+        if (!v.dateDebut || !v.dateFin) return false;
+        return journeeDate >= v.dateDebut && journeeDate <= v.dateFin;
+      });
+
+      if (!isCovered) {
+        const monthKey = j.date.substring(0, 7); // 'YYYY-MM'
+        if (!uncoveredByLieuMonth[j.lieuId]) {
+          uncoveredByLieuMonth[j.lieuId] = {};
+        }
+        if (!uncoveredByLieuMonth[j.lieuId][monthKey]) {
+          uncoveredByLieuMonth[j.lieuId][monthKey] = [];
+        }
+        uncoveredByLieuMonth[j.lieuId][monthKey].push(j);
       }
-      if (!groupedJournees[j.lieuId][monthKey]) {
-        groupedJournees[j.lieuId][monthKey] = [];
-      }
-      groupedJournees[j.lieuId][monthKey].push(j);
     });
 
-    // Pour chaque groupe, vérifier si un virement "reçu" couvre cette période
-    Object.entries(groupedJournees).forEach(([lieuId, monthsData]) => {
+    // Construire les PendingPayment à partir des journées non couvertes groupées
+    Object.entries(uncoveredByLieuMonth).forEach(([lieuId, monthsData]) => {
       const lieu = lieux.find((l) => l.id === lieuId);
       if (!lieu) return;
 
-      Object.entries(monthsData).forEach(([monthKey, monthJournees]) => {
-        // Calculer le montant attendu pour ce mois
-        const montantAttendu = monthJournees.reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
+      Object.entries(monthsData).forEach(([monthKey, uncoveredJournees]) => {
+        const montantAttendu = uncoveredJournees.reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
 
-        if (montantAttendu <= 0) return;
-
-        // Vérifier si un virement reçu couvre au moins une partie de ce mois
-        const monthStart = startOfMonth(parseISO(`${monthKey}-01`));
-        const monthEnd = endOfMonth(monthStart);
-
-        const hasReceivedPayment = virements.some((v) => {
-          if (v.statut !== "recu" || v.lieuId !== lieuId) return false;
-          if (!v.dateDebut || !v.dateFin) return false;
-
-          const vStart = parseISO(v.dateDebut);
-          const vEnd = parseISO(v.dateFin);
-
-          // Vérifier si les périodes se chevauchent
-          return !(vEnd < monthStart || vStart > monthEnd);
+        payments.push({
+          lieuId,
+          lieuNom: lieu.nom,
+          lieuCouleur: lieu.couleur,
+          month: monthKey,
+          monthLabel: format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: fr }),
+          montantAttendu,
+          journees: uncoveredJournees,
         });
-
-        if (!hasReceivedPayment) {
-          payments.push({
-            lieuId,
-            lieuNom: lieu.nom,
-            lieuCouleur: lieu.couleur,
-            month: monthKey,
-            monthLabel: format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: fr }),
-            montantAttendu,
-            journees: monthJournees,
-          });
-        }
       });
     });
 
@@ -201,45 +189,40 @@ export default function Paiements() {
     return payments.sort((a, b) => b.month.localeCompare(a.month));
   }, [journees, virements, lieux]);
 
-  // Calcul des paiements partiels (montantRecu < montantAttendu)
-  const partialPayments = useMemo((): PartialPayment[] => {
-    const payments: PartialPayment[] = [];
+  // Calcul des soldes par cabinet (agrégé)
+  const cabinetBalances = useMemo((): CabinetBalance[] => {
+    const balances: CabinetBalance[] = [];
 
-    virements
-      .filter((v) => v.statut === "recu")
-      .forEach((v) => {
-        if (!v.lieuId || !v.dateDebut || !v.dateFin) return;
+    lieux.forEach((lieu) => {
+      const totalAttendu = journees
+        .filter((j) => j.lieuId === lieu.id)
+        .reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
 
-        const lieu = lieux.find((l) => l.id === v.lieuId);
-        if (!lieu) return;
+      const totalRecu = virements
+        .filter((v) => v.statut === "recu" && v.lieuId === lieu.id)
+        .reduce((sum, v) => sum + (v.montantRecu || 0), 0);
 
-        const montantAttendu = calculateMontantAttendu(v.lieuId, v.dateDebut, v.dateFin);
-        const montantRecu = v.montantRecu || 0;
-        const montantManquant = montantAttendu - montantRecu;
+      const solde = totalRecu - totalAttendu;
 
-        if (montantManquant > 0) {
-          const monthKey = v.dateDebut.substring(0, 7);
-          payments.push({
-            lieuId: v.lieuId,
-            lieuNom: lieu.nom,
-            lieuCouleur: lieu.couleur,
-            month: monthKey,
-            monthLabel: format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: fr }),
-            montantAttendu,
-            montantRecu,
-            montantManquant,
-            virementId: v.id,
-          });
-        }
-      });
+      if (solde < 0) {
+        balances.push({
+          lieuId: lieu.id,
+          lieuNom: lieu.nom,
+          lieuCouleur: lieu.couleur,
+          totalAttendu,
+          totalRecu,
+          solde,
+        });
+      }
+    });
 
-    return payments.sort((a, b) => b.month.localeCompare(a.month));
-  }, [virements, lieux, journees]);
+    return balances.sort((a, b) => a.solde - b.solde);
+  }, [journees, virements, lieux]);
 
-  // Total des paiements partiels manquants
+  // Total des soldes manquants
   const totalPartialMissing = useMemo(() => {
-    return partialPayments.reduce((sum, p) => sum + p.montantManquant, 0);
-  }, [partialPayments]);
+    return cabinetBalances.reduce((sum, b) => sum + Math.abs(b.solde), 0);
+  }, [cabinetBalances]);
 
   // Total en attente
   const totalEnAttente = useMemo(() => {
@@ -549,7 +532,7 @@ export default function Paiements() {
               <AlertTriangle className="w-5 h-5 text-destructive" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Partiels manquants</p>
+              <p className="text-sm text-muted-foreground">Solde cabinets</p>
               <p className="text-2xl font-bold">{totalPartialMissing.toLocaleString("fr-FR")} €</p>
             </div>
           </div>
@@ -571,7 +554,7 @@ export default function Paiements() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 w-full max-w-lg">
           <TabsTrigger value="en_attente">En attente ({pendingPayments.length})</TabsTrigger>
-          <TabsTrigger value="partiel">Partiels ({partialPayments.length})</TabsTrigger>
+          <TabsTrigger value="partiel">Solde cabinets ({cabinetBalances.length})</TabsTrigger>
           <TabsTrigger value="recu">Reçus ({filteredReceivedVirements.length})</TabsTrigger>
         </TabsList>
 
@@ -666,61 +649,51 @@ export default function Paiements() {
           )}
         </TabsContent>
 
-        {/* Paiements partiels */}
+        {/* Solde cabinets */}
         <TabsContent value="partiel" className="mt-4">
-          {partialPayments.length === 0 ? (
+          {cabinetBalances.length === 0 ? (
             <div className="rounded-xl border border-border bg-card p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
                 <Check className="w-8 h-8 text-success" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Aucun paiement partiel</h3>
-              <p className="text-muted-foreground">Tous les paiements reçus correspondent aux montants attendus</p>
+              <h3 className="text-lg font-semibold mb-2">Tous les cabinets sont à jour !</h3>
+              <p className="text-muted-foreground">Aucun solde négatif détecté</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {partialPayments.map((payment, index) => (
+              {cabinetBalances.map((balance, index) => (
                 <div
-                  key={payment.virementId}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card animate-slide-up"
+                  key={balance.lieuId}
+                  className="p-4 rounded-xl border border-border bg-card animate-slide-up"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="w-2 h-14 rounded-full shrink-0" style={{ backgroundColor: payment.lieuCouleur }} />
+                  <div className="flex items-center gap-4">
+                    <div className="w-2 h-14 rounded-full shrink-0" style={{ backgroundColor: balance.lieuCouleur }} />
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold truncate">{payment.lieuNom}</h3>
-                      <Badge
-                        variant="outline"
-                        className="shrink-0 bg-destructive/10 text-destructive border-destructive/30"
-                      >
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        Partiel
-                      </Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold truncate">{balance.lieuNom}</h3>
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 bg-destructive/10 text-destructive border-destructive/30"
+                        >
+                          <AlertTriangle className="w-3 h-3 mr-1" />
+                          Solde négatif
+                        </Badge>
+                      </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <span>Attendu : {balance.totalAttendu.toLocaleString("fr-FR")} €</span>
+                        <span>Reçu : {balance.totalRecu.toLocaleString("fr-FR")} €</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground capitalize">{payment.monthLabel}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Reçu: {payment.montantRecu.toLocaleString("fr-FR")} € / Attendu:{" "}
-                      {payment.montantAttendu.toLocaleString("fr-FR")} €
-                    </p>
-                  </div>
 
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-destructive">
-                      -{payment.montantManquant.toLocaleString("fr-FR")} €
-                    </p>
-                    <p className="text-xs text-muted-foreground">manquant</p>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold text-destructive">
+                        {balance.solde.toLocaleString("fr-FR")} €
+                      </p>
+                      <p className="text-xs text-muted-foreground">manquant</p>
+                    </div>
                   </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      const virement = virements.find((v) => v.id === payment.virementId);
-                      if (virement) handleEdit(virement);
-                    }}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
                 </div>
               ))}
             </div>

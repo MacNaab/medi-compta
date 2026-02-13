@@ -21,6 +21,7 @@ import {
 import { getLieux, saveLieu, updateLieu, deleteLieu, Lieu } from '@/lib/storage';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { NumberInput } from '@/components/ui/number-input';
 
 const COLORS = [
   '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
@@ -137,13 +138,12 @@ export default function Cabinets() {
 
               <div className="space-y-2">
                 <Label htmlFor="retrocession">Taux de rétrocession (%)</Label>
-                <Input
+                <NumberInput
                   id="retrocession"
-                  type="number"
                   min={0}
                   max={100}
                   value={formData.pourcentageRetrocession}
-                  onChange={(e) => setFormData({ ...formData, pourcentageRetrocession: Number(e.target.value) })}
+                  onValueChange={(e) => setFormData({ ...formData, pourcentageRetrocession: e })}
                 />
               </div>
 

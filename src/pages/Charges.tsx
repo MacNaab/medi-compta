@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { getCharges, saveCharge, updateCharge, deleteCharge, Charge } from '@/lib/storage';
 import { MoreHorizontal } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { NumberInput } from '@/components/ui/number-input';
 
 const CATEGORIES = [
   { value: 'transport', label: 'Transport', icon: Car, color: 'hsl(var(--chart-1))' },
@@ -490,13 +491,12 @@ export default function Charges() {
             </div>
             <div className="space-y-2">
               <Label>Montant (€) *</Label>
-              <Input
-                type="number"
+              <NumberInput
                 step="0.01"
-                min="0"
+                min={0}
                 placeholder="0.00"
-                value={form.montant}
-                onChange={(e) => setForm({ ...form, montant: e.target.value })}
+                value={Number(form.montant)}
+                onValueChange={(e) => setForm({ ...form, montant: e.toString() })}
               />
             </div>
             <div className="flex items-center justify-between">

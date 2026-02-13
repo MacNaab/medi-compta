@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { getProfile, getVirements, getJournees, getChargesByYear } from '@/lib/storage';
+import { NumberInput } from '@/components/ui/number-input';
 
 
 interface SimulationResult {
@@ -378,13 +379,12 @@ export default function Simulateur() {
                     </TooltipContent>
                   </Tooltip>
                 </Label>
-                <Input
+                <NumberInput
                   id="proportion"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={proportionNonConventionne}
-                  onChange={(e) => setProportionNonConventionne(e.target.value)}
+                  min={0}
+                  max={100}
+                  value={Number(proportionNonConventionne)}
+                  onValueChange={(e) => setProportionNonConventionne(e.toString())}
                   placeholder="25"
                 />
               </div>
@@ -403,11 +403,10 @@ export default function Simulateur() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Input
+              <NumberInput
                 id="revenus"
-                type="number"
-                value={revenus}
-                onChange={(e) => setRevenus(e.target.value)}
+                value={Number(revenus)}
+                onValueChange={(e) => setRevenus(e.toString())}
                 placeholder="50000"
               />
               {/* Source indicator */}
@@ -443,11 +442,10 @@ export default function Simulateur() {
                     </TooltipContent>
                   </Tooltip>
                 </Label>
-                <Input
+                <NumberInput
                   id="charges"
-                  type="number"
-                  value={charges}
-                  onChange={(e) => setCharges(e.target.value)}
+                  value={Number(charges)}
+                  onValueChange={(e) => setCharges(e.toString())}
                   placeholder="5000"
                 />
                 <p className="text-xs text-muted-foreground">

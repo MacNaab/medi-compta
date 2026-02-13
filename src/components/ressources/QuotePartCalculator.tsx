@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { exportQuotePartPDF } from '@/lib/quotePartExport';
+import { NumberInput } from '../ui/number-input';
 
 // Barème kilométrique 2024 (applicable aux revenus 2024)
 // Source: https://www.impots.gouv.fr/particulier/frais-de-transport
@@ -243,10 +244,9 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
                     </TooltipContent>
                   </Tooltip>
                 </Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={surfaceTotale}
-                  onChange={(e) => setSurfaceTotale(parseFloat(e.target.value) || 0)}
+                  onValueChange={(e) => setSurfaceTotale(e || 0)}
                   min={1}
                 />
               </div>
@@ -262,10 +262,9 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
                     </TooltipContent>
                   </Tooltip>
                 </Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={surfacePro}
-                  onChange={(e) => setSurfacePro(parseFloat(e.target.value) || 0)}
+                  onValueChange={(e) => setSurfacePro(e || 0)}
                   max={surfaceTotale}
                   min={0}
                 />
@@ -289,46 +288,41 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Loyer (€/mois)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={loyerMensuel}
-                    onChange={(e) => setLoyerMensuel(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setLoyerMensuel(e || 0)}
                     min={0}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Charges (€/mois)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={chargesMensuelles}
-                    onChange={(e) => setChargesMensuelles(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setChargesMensuelles(e || 0)}
                     min={0}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Électricité (€/mois)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={electriciteMensuelle}
-                    onChange={(e) => setElectriciteMensuelle(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setElectriciteMensuelle(e || 0)}
                     min={0}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Internet (€/mois)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={internetMensuel}
-                    onChange={(e) => setInternetMensuel(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setInternetMensuel(e || 0)}
                     min={0}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Assurance (€/mois)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={assuranceMensuelle}
-                    onChange={(e) => setAssuranceMensuelle(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setAssuranceMensuelle(e || 0)}
                     min={0}
                   />
                 </div>
@@ -361,19 +355,17 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Kilomètres professionnels (annuels)</Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={kmProfessionnels}
-                  onChange={(e) => setKmProfessionnels(parseFloat(e.target.value) || 0)}
+                  onValueChange={(e) => setKmProfessionnels(e || 0)}
                   min={0}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Kilomètres totaux (annuels)</Label>
-                <Input
-                  type="number"
+                <NumberInput
                   value={kmTotaux}
-                  onChange={(e) => setKmTotaux(parseFloat(e.target.value) || 0)}
+                  onValueChange={(e) => setKmTotaux(e || 0)}
                   min={kmProfessionnels}
                 />
               </div>
@@ -472,10 +464,9 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
                 <div className="grid grid-cols-2 gap-4 ml-6">
                   <div className="space-y-2">
                     <Label>Total frais annuels (€)</Label>
-                    <Input
-                      type="number"
+                    <NumberInput
                       value={fraisReelsVehicule}
-                      onChange={(e) => setFraisReelsVehicule(parseFloat(e.target.value) || 0)}
+                      onValueChange={(e) => setFraisReelsVehicule(e || 0)}
                       min={0}
                       placeholder="Carburant, entretien, assurance..."
                     />
@@ -525,10 +516,9 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Facture mensuelle (€)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={facturePhone}
-                    onChange={(e) => setFacturePhone(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setFacturePhone(e || 0)}
                     min={0}
                   />
                 </div>
@@ -561,10 +551,9 @@ export function QuotePartCalculator({ onClose }: QuotePartCalculatorProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Facture mensuelle (€)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
                     value={factureInternet}
-                    onChange={(e) => setFactureInternet(parseFloat(e.target.value) || 0)}
+                    onValueChange={(e) => setFactureInternet(e || 0)}
                     min={0}
                   />
                 </div>

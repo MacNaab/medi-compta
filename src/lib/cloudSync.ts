@@ -45,6 +45,7 @@ interface CloudJournee {
   recettes: number;
   retrocession_percentage: number | null;
   honoraires_theoriques: number | null;
+  prime: number;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -138,6 +139,7 @@ const journeeToCloud = (journee: Journee, userId: string, lieuIdMap: Map<string,
   lieu_id: journee.lieuId ? (lieuIdMap.get(journee.lieuId) || journee.lieuId) : null,
   recettes: journee.recettesTotales || 0,
   retrocession_percentage: null,
+  prime: journee.prime || 0,
   honoraires_theoriques: journee.honorairesTheoriques || null,
   notes: journee.notes || null,
 });
@@ -149,6 +151,7 @@ const cloudToJournee = (cloud: CloudJournee): Journee => ({
   date: cloud.date,
   recettesTotales: cloud.recettes,
   honorairesTheoriques: cloud.honoraires_theoriques || undefined,
+  prime: cloud.prime || undefined,
   notes: cloud.notes || undefined,
   createdAt: cloud.created_at,
   updatedAt: cloud.updated_at,
