@@ -20,7 +20,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -35,8 +41,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -54,6 +68,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format, parseISO, isWithinInterval } from "date-fns";
 import { fr } from "date-fns/locale";
+import { DatePickerInput } from "@/components/ui/date-picker";
 
 interface YearMonthSelection {
   [year: string]: string[]; // year -> array of months (YYYY-MM format)
@@ -108,7 +123,11 @@ export default function Paiements() {
   }, []);
 
   // Calcul du montant attendu basé sur les journées entre dateDebut et dateFin
-  const calculateMontantAttendu = (lieuId: string, dateDebut: string, dateFin: string): number => {
+  const calculateMontantAttendu = (
+    lieuId: string,
+    dateDebut: string,
+    dateFin: string,
+  ): number => {
     if (!lieuId || !dateDebut || !dateFin) return 0;
 
     const lieu = lieux.find((l) => l.id === lieuId);
@@ -125,12 +144,19 @@ export default function Paiements() {
     });
 
     // Calculer le total des honoraires théoriques
-    return journeesInPeriod.reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
+    return journeesInPeriod.reduce(
+      (sum, j) => sum + (j.honorairesTheoriques || 0),
+      0,
+    );
   };
 
   const montantAttendu = useMemo(() => {
-    return calculateMontantAttendu(formData.lieuId, formData.dateDebut, formData.dateFin);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return calculateMontantAttendu(
+      formData.lieuId,
+      formData.dateDebut,
+      formData.dateFin,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.lieuId, formData.dateDebut, formData.dateFin, journees, lieux]);
 
   // Calcul automatique des paiements en attente par journée non couverte
@@ -171,14 +197,19 @@ export default function Paiements() {
       if (!lieu) return;
 
       Object.entries(monthsData).forEach(([monthKey, uncoveredJournees]) => {
-        const montantAttendu = uncoveredJournees.reduce((sum, j) => sum + (j.honorairesTheoriques || 0), 0);
+        const montantAttendu = uncoveredJournees.reduce(
+          (sum, j) => sum + (j.honorairesTheoriques || 0),
+          0,
+        );
 
         payments.push({
           lieuId,
           lieuNom: lieu.nom,
           lieuCouleur: lieu.couleur,
           month: monthKey,
-          monthLabel: format(parseISO(`${monthKey}-01`), "MMMM yyyy", { locale: fr }),
+          monthLabel: format(parseISO(`${monthKey}-01`), "MMMM yyyy", {
+            locale: fr,
+          }),
           montantAttendu,
           journees: uncoveredJournees,
         });
@@ -204,16 +235,16 @@ export default function Paiements() {
 
       const solde = totalRecu - totalAttendu;
 
-      if (solde < 0) {
-        balances.push({
-          lieuId: lieu.id,
-          lieuNom: lieu.nom,
-          lieuCouleur: lieu.couleur,
-          totalAttendu,
-          totalRecu,
-          solde,
-        });
-      }
+      // if (solde < 0) {
+      balances.push({
+        lieuId: lieu.id,
+        lieuNom: lieu.nom,
+        lieuCouleur: lieu.couleur,
+        totalAttendu,
+        totalRecu,
+        solde,
+      });
+      // }
     });
 
     return balances.sort((a, b) => a.solde - b.solde);
@@ -221,7 +252,10 @@ export default function Paiements() {
 
   // Total des soldes manquants
   const totalPartialMissing = useMemo(() => {
-    return cabinetBalances.reduce((sum, b) => sum + Math.abs(b.solde), 0);
+    return cabinetBalances.reduce(
+      (sum, b) => sum + (b.solde > 0 ? b.solde : 0),
+      0,
+    );
   }, [cabinetBalances]);
 
   // Total en attente
@@ -274,12 +308,16 @@ export default function Paiements() {
 
   // Toggle month selection
   const toggleMonth = (month: string) => {
-    setSelectedMonths((prev) => (prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month]));
+    setSelectedMonths((prev) =>
+      prev.includes(month) ? prev.filter((m) => m !== month) : [...prev, month],
+    );
   };
 
   // Toggle year expansion
   const toggleYearExpanded = (year: string) => {
-    setExpandedYears((prev) => (prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]));
+    setExpandedYears((prev) =>
+      prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year],
+    );
   };
 
   // Clear all filters
@@ -300,12 +338,16 @@ export default function Paiements() {
       })
       .sort(
         (a, b) =>
-          new Date(b.dateReception || b.createdAt).getTime() - new Date(a.dateReception || a.createdAt).getTime(),
+          new Date(b.dateReception || b.createdAt).getTime() -
+          new Date(a.dateReception || a.createdAt).getTime(),
       );
   }, [virements, filterLieuId, selectedMonths]);
 
   const totalReceived = useMemo(() => {
-    return filteredReceivedVirements.reduce((sum, v) => sum + (v.montantRecu || 0), 0);
+    return filteredReceivedVirements.reduce(
+      (sum, v) => sum + (v.montantRecu || 0),
+      0,
+    );
   }, [filteredReceivedVirements]);
 
   const resetForm = () => {
@@ -327,7 +369,9 @@ export default function Paiements() {
       lieuId: formData.lieuId || undefined,
       dateDebut: formData.dateDebut || undefined,
       dateFin: formData.dateFin || undefined,
-      montantRecu: formData.montantRecu ? Number(formData.montantRecu) : undefined,
+      montantRecu: formData.montantRecu
+        ? Number(formData.montantRecu)
+        : undefined,
       dateReception: formData.dateReception || format(new Date(), "yyyy-MM-dd"),
       statut: "recu" as const,
       notes: formData.notes || undefined,
@@ -369,7 +413,9 @@ export default function Paiements() {
 
   // Créer un paiement à partir d'un paiement en attente
   const handleCreateFromPending = (pending: PendingPayment) => {
-    const dates = pending.journees.map((j) => parseISO(j.date)).sort((a, b) => a.getTime() - b.getTime());
+    const dates = pending.journees
+      .map((j) => parseISO(j.date))
+      .sort((a, b) => a.getTime() - b.getTime());
     const dateDebut = dates[0];
     const dateFin = dates[dates.length - 1];
 
@@ -391,7 +437,9 @@ export default function Paiements() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold">Paiements</h1>
-          <p className="text-muted-foreground">Suivez vos virements et paiements</p>
+          <p className="text-muted-foreground">
+            Suivez vos virements et paiements
+          </p>
         </div>
         <Dialog
           open={isDialogOpen}
@@ -408,8 +456,14 @@ export default function Paiements() {
           </DialogTrigger>
           <DialogContent className="max-w-md max-h-[85vh] flex flex-col overflow-hidden">
             <DialogHeader className="flex-shrink-0">
-              <DialogTitle>{editingVirement ? "Modifier le paiement" : "Nouveau paiement reçu"}</DialogTitle>
-              <DialogDescription>Enregistrez un paiement reçu</DialogDescription>
+              <DialogTitle>
+                {editingVirement
+                  ? "Modifier le paiement"
+                  : "Nouveau paiement reçu"}
+              </DialogTitle>
+              <DialogDescription>
+                Enregistrez un paiement reçu
+              </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 overflow-y-auto pr-4">
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -417,7 +471,9 @@ export default function Paiements() {
                   <Label htmlFor="lieu">Cabinet</Label>
                   <Select
                     value={formData.lieuId}
-                    onValueChange={(value) => setFormData({ ...formData, lieuId: value })}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, lieuId: value })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un cabinet" />
@@ -426,7 +482,10 @@ export default function Paiements() {
                       {lieux.map((lieu) => (
                         <SelectItem key={lieu.id} value={lieu.id}>
                           <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lieu.couleur }} />
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: lieu.couleur }}
+                            />
                             {lieu.nom}
                           </div>
                         </SelectItem>
@@ -438,20 +497,24 @@ export default function Paiements() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="dateDebut">Date début</Label>
-                    <Input
+                    <DatePickerInput
                       id="dateDebut"
-                      type="date"
-                      value={formData.dateDebut}
-                      onChange={(e) => setFormData({ ...formData, dateDebut: e.target.value })}
+                      value={
+                        formData.dateDebut ? new Date(formData.dateDebut) : null
+                      }
+                      onChange={(e) =>
+                        setFormData({ ...formData, dateDebut: e })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="dateFin">Date fin</Label>
-                    <Input
+                    <DatePickerInput
                       id="dateFin"
-                      type="date"
-                      value={formData.dateFin}
-                      onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
+                      value={
+                        formData.dateFin ? new Date(formData.dateFin) : null
+                      }
+                      onChange={(e) => setFormData({ ...formData, dateFin: e })}
                     />
                   </div>
                 </div>
@@ -459,12 +522,21 @@ export default function Paiements() {
                 {/* Montant attendu (calculé automatiquement) */}
                 <div className="rounded-lg border border-border bg-muted/30 p-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Montant attendu</span>
-                    <span className="font-semibold">{montantAttendu.toLocaleString("fr-FR")} €</span>
+                    <span className="text-sm text-muted-foreground">
+                      Montant attendu
+                    </span>
+                    <span className="font-semibold">
+                      {montantAttendu.toLocaleString("fr-FR")} €
+                    </span>
                   </div>
-                  {montantAttendu === 0 && formData.lieuId && formData.dateDebut && formData.dateFin && (
-                    <p className="text-xs text-muted-foreground mt-1">Aucune journée enregistrée pour cette période</p>
-                  )}
+                  {montantAttendu === 0 &&
+                    formData.lieuId &&
+                    formData.dateDebut &&
+                    formData.dateFin && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Aucune journée enregistrée pour cette période
+                      </p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
@@ -474,19 +546,25 @@ export default function Paiements() {
                     type="number"
                     step="0.01"
                     value={formData.montantRecu}
-                    onChange={(e) => setFormData({ ...formData, montantRecu: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, montantRecu: e.target.value })
+                    }
                     placeholder="Ex: 1250.00"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="dateReception">Date de réception</Label>
-                  <Input
+                  <DatePickerInput
                     id="dateReception"
-                    type="date"
-                    value={formData.dateReception}
-                    max={format(new Date(), "yyyy-MM-dd")}
-                    onChange={(e) => setFormData({ ...formData, dateReception: e.target.value })}
+                    value={new Date(formData.dateReception)}
+                    // max={format(new Date(), "yyyy-MM-dd")}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        dateReception: e,
+                      })
+                    }
                   />
                 </div>
 
@@ -495,17 +573,25 @@ export default function Paiements() {
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
                     placeholder="Notes sur ce paiement..."
                     rows={2}
                   />
                 </div>
 
                 <div className="flex justify-end gap-3 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
                     Annuler
                   </Button>
-                  <Button type="submit">{editingVirement ? "Enregistrer" : "Ajouter"}</Button>
+                  <Button type="submit">
+                    {editingVirement ? "Enregistrer" : "Ajouter"}
+                  </Button>
                 </div>
               </form>
             </ScrollArea>
@@ -522,7 +608,9 @@ export default function Paiements() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">En attente</p>
-              <p className="text-2xl font-bold">{totalEnAttente.toLocaleString("fr-FR")} €</p>
+              <p className="text-2xl font-bold">
+                {totalEnAttente.toLocaleString("fr-FR")} €
+              </p>
             </div>
           </div>
         </div>
@@ -533,7 +621,9 @@ export default function Paiements() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Solde cabinets</p>
-              <p className="text-2xl font-bold">{totalPartialMissing.toLocaleString("fr-FR")} €</p>
+              <p className="text-2xl font-bold">
+                {totalPartialMissing.toLocaleString("fr-FR")} €
+              </p>
             </div>
           </div>
         </div>
@@ -544,7 +634,9 @@ export default function Paiements() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Reçus (filtrés)</p>
-              <p className="text-2xl font-bold">{totalReceived.toLocaleString("fr-FR")} €</p>
+              <p className="text-2xl font-bold">
+                {totalReceived.toLocaleString("fr-FR")} €
+              </p>
             </div>
           </div>
         </div>
@@ -553,9 +645,15 @@ export default function Paiements() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3 w-full max-w-lg">
-          <TabsTrigger value="en_attente">En attente ({pendingPayments.length})</TabsTrigger>
-          <TabsTrigger value="partiel">Solde cabinets ({cabinetBalances.length})</TabsTrigger>
-          <TabsTrigger value="recu">Reçus ({filteredReceivedVirements.length})</TabsTrigger>
+          <TabsTrigger value="en_attente">
+            En attente ({pendingPayments.length})
+          </TabsTrigger>
+          <TabsTrigger value="partiel">
+            Solde cabinets ({cabinetBalances.length})
+          </TabsTrigger>
+          <TabsTrigger value="recu">
+            Reçus ({filteredReceivedVirements.length})
+          </TabsTrigger>
         </TabsList>
 
         {/* En attente - calculé automatiquement */}
@@ -573,8 +671,14 @@ export default function Paiements() {
               {pendingPayments.map((payment) => (
                 <Collapsible
                   key={`${payment.lieuId}-${payment.month}`}
-                  open={expandedPending === `${payment.lieuId}-${payment.month}`}
-                  onOpenChange={(open) => setExpandedPending(open ? `${payment.lieuId}-${payment.month}` : null)}
+                  open={
+                    expandedPending === `${payment.lieuId}-${payment.month}`
+                  }
+                  onOpenChange={(open) =>
+                    setExpandedPending(
+                      open ? `${payment.lieuId}-${payment.month}` : null,
+                    )
+                  }
                 >
                   <div className="rounded-xl border border-border bg-card overflow-hidden">
                     <CollapsibleTrigger className="w-full">
@@ -586,24 +690,34 @@ export default function Paiements() {
 
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold truncate">{payment.lieuNom}</h3>
-                            <Badge variant="outline" className="shrink-0 bg-warning/10 text-warning border-warning/30">
+                            <h3 className="font-semibold truncate">
+                              {payment.lieuNom}
+                            </h3>
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 bg-warning/10 text-warning border-warning/30"
+                            >
                               <Clock className="w-3 h-3 mr-1" />
                               En attente
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {payment.monthLabel} • {payment.journees.length} journée
+                            {payment.monthLabel} • {payment.journees.length}{" "}
+                            journée
                             {payment.journees.length > 1 ? "s" : ""}
                           </p>
                         </div>
 
-                        <p className="text-lg font-bold shrink-0">{payment.montantAttendu.toLocaleString("fr-FR")} €</p>
+                        <p className="text-lg font-bold shrink-0">
+                          {payment.montantAttendu.toLocaleString("fr-FR")} €
+                        </p>
 
                         <ChevronDown
                           className={cn(
                             "w-5 h-5 text-muted-foreground transition-transform",
-                            expandedPending === `${payment.lieuId}-${payment.month}` && "rotate-180",
+                            expandedPending ===
+                              `${payment.lieuId}-${payment.month}` &&
+                              "rotate-180",
                           )}
                         />
 
@@ -624,7 +738,9 @@ export default function Paiements() {
 
                     <CollapsibleContent>
                       <div className="border-t border-border p-4 bg-muted/30">
-                        <h4 className="text-sm font-medium text-muted-foreground mb-3">Détail des journées</h4>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                          Détail des journées
+                        </h4>
                         <div className="space-y-2">
                           {payment.journees.map((journee) => (
                             <div
@@ -632,10 +748,15 @@ export default function Paiements() {
                               className="flex items-center justify-between p-2 rounded-lg bg-card border border-border"
                             >
                               <span className="text-sm">
-                                {format(parseISO(journee.date), "EEEE d MMMM", { locale: fr })}
+                                {format(parseISO(journee.date), "EEEE d MMMM", {
+                                  locale: fr,
+                                })}
                               </span>
                               <span className="text-sm font-medium">
-                                {(journee.honorairesTheoriques || 0).toLocaleString("fr-FR")} €
+                                {(
+                                  journee.honorairesTheoriques || 0
+                                ).toLocaleString("fr-FR")}{" "}
+                                €
                               </span>
                             </div>
                           ))}
@@ -651,13 +772,17 @@ export default function Paiements() {
 
         {/* Solde cabinets */}
         <TabsContent value="partiel" className="mt-4">
-          {cabinetBalances.length === 0 ? (
+          {totalPartialMissing === 0 ? (
             <div className="rounded-xl border border-border bg-card p-12 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
                 <Check className="w-8 h-8 text-success" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Tous les cabinets sont à jour !</h3>
-              <p className="text-muted-foreground">Aucun solde négatif détecté</p>
+              <h3 className="text-lg font-semibold mb-2">
+                Tous les cabinets sont à jour !
+              </h3>
+              <p className="text-muted-foreground">
+                Aucun solde négatif détecté
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -668,31 +793,86 @@ export default function Paiements() {
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-2 h-14 rounded-full shrink-0" style={{ backgroundColor: balance.lieuCouleur }} />
+                    <div
+                      className="w-2 h-14 rounded-full shrink-0"
+                      style={{ backgroundColor: balance.lieuCouleur }}
+                    />
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">{balance.lieuNom}</h3>
-                        <Badge
-                          variant="outline"
-                          className="shrink-0 bg-destructive/10 text-destructive border-destructive/30"
-                        >
-                          <AlertTriangle className="w-3 h-3 mr-1" />
-                          Solde négatif
-                        </Badge>
+                        <h3 className="font-semibold truncate">
+                          {balance.lieuNom}
+                        </h3>
+                        {balance.solde === 0 && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 bg-success/10 text-success border-success/30"
+                          >
+                            <Check className="w-3 h-3 mr-1" />
+                            Solde OK
+                          </Badge>
+                        )}
+                        {balance.solde > 0 && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 bg-success/10 text-success border-success/30"
+                          >
+                            <Check className="w-3 h-3 mr-1" />
+                            Solde positif
+                          </Badge>
+                        )}
+                        {balance.solde < 0 && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 bg-destructive/10 text-destructive border-destructive/30"
+                          >
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            Solde négatif
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        <span>Attendu : {balance.totalAttendu.toLocaleString("fr-FR")} €</span>
-                        <span>Reçu : {balance.totalRecu.toLocaleString("fr-FR")} €</span>
+                        <span>
+                          Attendu :{" "}
+                          {balance.totalAttendu.toLocaleString("fr-FR")} €
+                        </span>
+                        <span>
+                          Reçu : {balance.totalRecu.toLocaleString("fr-FR")} €
+                        </span>
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <p className="text-lg font-bold text-destructive">
-                        {balance.solde.toLocaleString("fr-FR")} €
-                      </p>
-                      <p className="text-xs text-muted-foreground">manquant</p>
-                    </div>
+                    {balance.solde > 0 && (
+                      <div className="text-right shrink-0">
+                        <p className="text-lg font-bold text-success">
+                          {balance.solde.toLocaleString("fr-FR")} €
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          surplus
+                        </p>
+                      </div>
+                    )}
+                    {
+                      balance.solde === 0 && (
+                        <div className="text-right shrink-0">
+                          <p className="text-lg font-bold text-success">
+                            {balance.solde.toLocaleString("fr-FR")} €
+                          </p>
+                        </div>
+                      )
+                    }
+                    {
+                      balance.solde < 0 && (
+                        <div className="text-right shrink-0">
+                          <p className="text-lg font-bold text-destructive">
+                            {balance.solde.toLocaleString("fr-FR")} €
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            manquant
+                          </p>
+                        </div>
+                      )
+                    }
                   </div>
                 </div>
               ))}
@@ -717,7 +897,10 @@ export default function Paiements() {
                 {lieux.map((lieu) => (
                   <SelectItem key={lieu.id} value={lieu.id}>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lieu.couleur }} />
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: lieu.couleur }}
+                      />
                       {lieu.nom}
                     </div>
                   </SelectItem>
@@ -728,7 +911,10 @@ export default function Paiements() {
             {/* Period multi-select with hierarchy */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-[220px] justify-start text-left font-normal">
+                <Button
+                  variant="outline"
+                  className="w-[220px] justify-start text-left font-normal"
+                >
                   <Filter className="w-4 h-4 mr-2" />
                   {selectedMonths.length === 0
                     ? "Toutes les périodes"
@@ -746,15 +932,23 @@ export default function Paiements() {
               </PopoverTrigger>
               <PopoverContent className="w-[280px] p-0" align="start">
                 <div className="p-3 border-b border-border">
-                  <p className="text-sm font-medium">Sélectionner les périodes</p>
-                  <p className="text-xs text-muted-foreground">Cochez les années ou mois souhaités</p>
+                  <p className="text-sm font-medium">
+                    Sélectionner les périodes
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Cochez les années ou mois souhaités
+                  </p>
                 </div>
                 <ScrollArea className="h-[300px]">
                   <div className="p-2 space-y-1">
                     {availableYears.map((year) => {
                       const yearMonths = availableYearsMonths[year] || [];
-                      const allSelected = yearMonths.length > 0 && yearMonths.every((m) => selectedMonths.includes(m));
-                      const someSelected = yearMonths.some((m) => selectedMonths.includes(m));
+                      const allSelected =
+                        yearMonths.length > 0 &&
+                        yearMonths.every((m) => selectedMonths.includes(m));
+                      const someSelected = yearMonths.some((m) =>
+                        selectedMonths.includes(m),
+                      );
                       const isExpanded = expandedYears.includes(year);
 
                       return (
@@ -766,19 +960,26 @@ export default function Paiements() {
                               className="h-5 w-5 p-0"
                               onClick={() => toggleYearExpanded(year)}
                             >
-                              {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
                             </Button>
                             <Checkbox
                               checked={allSelected}
                               ref={(el) => {
                                 if (el && someSelected && !allSelected) {
-                                  (el as HTMLButtonElement).dataset.state = "indeterminate";
+                                  (el as HTMLButtonElement).dataset.state =
+                                    "indeterminate";
                                 }
                               }}
                               onCheckedChange={() => toggleYear(year)}
                             />
                             <span className="font-medium">{year}</span>
-                            <span className="text-xs text-muted-foreground ml-auto">({yearMonths.length} mois)</span>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              ({yearMonths.length} mois)
+                            </span>
                           </div>
 
                           {isExpanded && (
@@ -790,10 +991,16 @@ export default function Paiements() {
                                 >
                                   <Checkbox
                                     checked={selectedMonths.includes(monthKey)}
-                                    onCheckedChange={() => toggleMonth(monthKey)}
+                                    onCheckedChange={() =>
+                                      toggleMonth(monthKey)
+                                    }
                                   />
                                   <span className="text-sm capitalize">
-                                    {format(parseISO(`${monthKey}-01`), "MMMM", { locale: fr })}
+                                    {format(
+                                      parseISO(`${monthKey}-01`),
+                                      "MMMM",
+                                      { locale: fr },
+                                    )}
                                   </span>
                                 </div>
                               ))}
@@ -803,7 +1010,9 @@ export default function Paiements() {
                       );
                     })}
                     {availableYears.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">Aucune période disponible</p>
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Aucune période disponible
+                      </p>
                     )}
                   </div>
                 </ScrollArea>
@@ -816,7 +1025,9 @@ export default function Paiements() {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                 <Wallet className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Aucun paiement reçu</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Aucun paiement reçu
+              </h3>
               <p className="text-muted-foreground mb-6">
                 {filterLieuId !== "all" || selectedMonths.length > 0
                   ? "Aucun paiement ne correspond aux filtres sélectionnés"
@@ -841,8 +1052,13 @@ export default function Paiements() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">{lieu?.nom || "Cabinet inconnu"}</h3>
-                        <Badge variant="outline" className="shrink-0 bg-success/10 text-success border-success/30">
+                        <h3 className="font-semibold truncate">
+                          {lieu?.nom || "Cabinet inconnu"}
+                        </h3>
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 bg-success/10 text-success border-success/30"
+                        >
                           <Check className="w-3 h-3 mr-1" />
                           Reçu
                         </Badge>
@@ -853,7 +1069,12 @@ export default function Paiements() {
                           : "Période non spécifiée"}
                         {virement.dateReception && (
                           <span className="ml-2">
-                            • Reçu le {format(parseISO(virement.dateReception), "dd/MM/yyyy", { locale: fr })}
+                            • Reçu le{" "}
+                            {format(
+                              parseISO(virement.dateReception),
+                              "dd/MM/yyyy",
+                              { locale: fr },
+                            )}
                           </span>
                         )}
                       </p>
