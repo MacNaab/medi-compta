@@ -52,6 +52,7 @@ import { CloudSection } from "@/components/settings/CloudSection";
 import { useCloudProfile } from "@/hooks/use-cloud-profile";
 import { cloudUpdateProfile } from "@/lib/cloudOperations";
 import { useAuth } from "@/hooks/use-auth";
+import { DatePickerInput } from "@/components/ui/date-picker";
 
 const formatDateForInput = (isoDate: string | undefined | null): string => {
   if (!isoDate) return "2025-11-01"; // Default to Nov 1, 2025
@@ -264,11 +265,10 @@ export default function Parametres() {
               <Building className="w-4 h-4" />
               Date de création d'entreprise
             </Label>
-            <Input
+            <DatePickerInput
               id="dateCreationEntreprise"
-              type="date"
-              value={dateCreationEntreprise}
-              onChange={(e) => setDateCreationEntreprise(e.target.value)}
+              value={new Date(dateCreationEntreprise)}
+              onChange={(e) => setDateCreationEntreprise(e)}
             />
             <p className="text-xs text-muted-foreground">
               Utilisée dans le simulateur Super-Net pour le calcul des
@@ -466,7 +466,12 @@ export default function Parametres() {
                   )}
 
                   {!importWarnings && (
-                    <Input className="cursor-pointer" type="file" accept=".json" onChange={handleImport} />
+                    <Input
+                      className="cursor-pointer"
+                      type="file"
+                      accept=".json"
+                      onChange={handleImport}
+                    />
                   )}
                 </div>
               </DialogContent>
